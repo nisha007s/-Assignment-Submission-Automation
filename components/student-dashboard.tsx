@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/table";
 import { UploadModal } from "@/components/upload-modal";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { FloatingMenu } from "@/components/floating-menu";
 import { Upload, LogOut, Calendar, FileText } from "lucide-react";
 
 interface StudentDashboardProps {
@@ -265,6 +266,20 @@ export function StudentDashboard({ userName, onLogout }: StudentDashboardProps) 
         onOpenChange={setUploadModalOpen}
         assignmentTitle={selectedAssignment}
         onSubmit={handleUploadSubmit}
+      />
+
+      <FloatingMenu
+        onHomeClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        onUploadClick={() => {
+          setSelectedAssignment(mockAssignments[0].title);
+          setUploadModalOpen(true);
+        }}
+        onCenterClick={() => {
+          setSelectedAssignment(mockAssignments[0].title);
+          setUploadModalOpen(true);
+        }}
+        onShareClick={() => alert("Share feature coming soon!")}
+        onFavoriteClick={() => alert("Favorites feature coming soon!")}
       />
     </div>
   );

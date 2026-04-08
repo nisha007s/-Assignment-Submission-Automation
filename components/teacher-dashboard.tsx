@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/table";
 import { FieldGroup, Field, FieldLabel } from "@/components/ui/field";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { FloatingMenu } from "@/components/floating-menu";
 import { LogOut, Download, Plus, GraduationCap, Calendar, FileText } from "lucide-react";
 
 interface TeacherDashboardProps {
@@ -323,6 +324,17 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
           </div>
         </div>
       </main>
+
+      <FloatingMenu
+        onHomeClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        onUploadClick={() => alert("Upload feature for teachers coming soon!")}
+        onCenterClick={() => {
+          // Focus on the create assignment form
+          document.getElementById("title")?.focus();
+        }}
+        onShareClick={() => alert("Share feature coming soon!")}
+        onFavoriteClick={() => alert("Favorites feature coming soon!")}
+      />
     </div>
   );
 }
