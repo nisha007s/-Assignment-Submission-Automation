@@ -98,19 +98,19 @@ export function StudentDashboard({ userName, onLogout }: StudentDashboardProps) 
     switch (status) {
       case "submitted":
         return (
-          <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20">
+          <Badge className="bg-orange-500/15 text-orange-500 border-orange-500/30 hover:bg-orange-500/25">
             Submitted
           </Badge>
         );
       case "under review":
         return (
-          <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/20">
+          <Badge className="bg-amber-500/15 text-amber-500 border-amber-500/30 hover:bg-amber-500/25">
             Under Review
           </Badge>
         );
       case "graded":
         return (
-          <Badge className="bg-primary/15 text-primary border-primary/20 hover:bg-primary/20">
+          <Badge className="bg-emerald-500/15 text-emerald-500 border-emerald-500/30 hover:bg-emerald-500/25">
             Graded
           </Badge>
         );
@@ -120,16 +120,8 @@ export function StudentDashboard({ userName, onLogout }: StudentDashboardProps) 
   };
 
   const getVersionBadge = (version: string) => {
-    const colors = [
-      "bg-violet-500/15 text-violet-600 dark:text-violet-400 border-violet-500/20",
-      "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/20",
-      "bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border-cyan-500/20",
-    ];
-    const versionNum = parseInt(version.slice(1)) - 1;
-    const colorClass = colors[versionNum % colors.length];
-    
     return (
-      <Badge className={`${colorClass} font-mono text-xs px-2 py-0.5`}>
+      <Badge className="bg-orange-500/10 text-orange-400 border-orange-500/20 font-mono text-xs px-2 py-0.5">
         {version}
       </Badge>
     );
@@ -138,24 +130,24 @@ export function StudentDashboard({ userName, onLogout }: StudentDashboardProps) 
   return (
     <div className="min-h-screen bg-background transition-colors duration-300">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
+      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/90 backdrop-blur-md">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent">
-              <FileText className="h-5 w-5 text-white" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 orange-glow-sm">
+              <FileText className="h-5 w-5 text-black" />
             </div>
-            <h1 className="text-xl font-semibold">Student Dashboard</h1>
+            <h1 className="text-xl font-semibold text-foreground">Student Dashboard</h1>
           </div>
           <div className="flex items-center gap-3">
             <span className="text-sm text-muted-foreground hidden sm:inline">
-              Welcome, <span className="font-medium text-foreground">{userName}</span>
+              Welcome, <span className="font-medium text-orange-500">{userName}</span>
             </span>
             <ThemeToggle />
             <Button 
               variant="outline" 
               size="sm" 
               onClick={onLogout}
-              className="rounded-xl transition-all duration-200 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
+              className="rounded-xl border-border/50 bg-secondary transition-all duration-200 hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30"
             >
               <LogOut className="mr-2 h-4 w-4" />
               Logout
@@ -168,34 +160,34 @@ export function StudentDashboard({ userName, onLogout }: StudentDashboardProps) 
         <div className="grid gap-8">
           {/* Available Assignments Section */}
           <section>
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-foreground">
+              <span className="h-2 w-2 rounded-full bg-orange-500" />
               Available Assignments
             </h2>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {mockAssignments.map((assignment) => (
                 <Card 
                   key={assignment.id}
-                  className="group rounded-2xl border-2 border-transparent bg-card transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-1 gradient-border"
+                  className="group rounded-2xl border-border/50 bg-card transition-all duration-300 hover:orange-glow-sm hover:-translate-y-1"
                 >
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-base font-semibold group-hover:text-primary transition-colors duration-200">
+                    <CardTitle className="text-base font-semibold text-foreground group-hover:text-orange-500 transition-colors duration-200">
                       {assignment.title}
                     </CardTitle>
-                    <CardDescription className="line-clamp-2 text-sm">
+                    <CardDescription className="line-clamp-2 text-sm text-muted-foreground">
                       {assignment.description}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Calendar className="h-4 w-4" />
+                        <Calendar className="h-4 w-4 text-orange-500/70" />
                         <span>Due: {assignment.deadline}</span>
                       </div>
                       <Button
                         size="sm"
                         onClick={() => handleUploadClick(assignment.title)}
-                        className="rounded-xl gradient-button text-white transition-all duration-300 hover:scale-105 active:scale-95"
+                        className="rounded-xl gradient-button text-black font-medium transition-all duration-300 hover:scale-105 active:scale-95"
                       >
                         <Upload className="mr-2 h-4 w-4" />
                         Upload
@@ -209,19 +201,19 @@ export function StudentDashboard({ userName, onLogout }: StudentDashboardProps) 
 
           {/* My Submissions Section */}
           <section>
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-foreground">
+              <span className="h-2 w-2 rounded-full bg-orange-400" />
               My Submissions
             </h2>
-            <Card className="rounded-2xl overflow-hidden border shadow-sm">
+            <Card className="rounded-2xl overflow-hidden border-border/50 bg-card">
               <CardContent className="p-0">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-muted/30 hover:bg-muted/30">
-                      <TableHead className="font-semibold">Assignment</TableHead>
-                      <TableHead className="font-semibold">Version</TableHead>
-                      <TableHead className="font-semibold">Upload Date</TableHead>
-                      <TableHead className="font-semibold">Status</TableHead>
+                    <TableRow className="bg-secondary/50 hover:bg-secondary/50 border-border/50">
+                      <TableHead className="font-semibold text-foreground">Assignment</TableHead>
+                      <TableHead className="font-semibold text-foreground">Version</TableHead>
+                      <TableHead className="font-semibold text-foreground">Upload Date</TableHead>
+                      <TableHead className="font-semibold text-foreground">Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -238,9 +230,9 @@ export function StudentDashboard({ userName, onLogout }: StudentDashboardProps) 
                       submissions.map((submission) => (
                         <TableRow 
                           key={submission.id}
-                          className="transition-colors duration-200 hover:bg-muted/50"
+                          className="transition-colors duration-200 hover:bg-secondary/30 border-border/50"
                         >
-                          <TableCell className="font-medium">
+                          <TableCell className="font-medium text-foreground">
                             {submission.assignmentName}
                           </TableCell>
                           <TableCell>

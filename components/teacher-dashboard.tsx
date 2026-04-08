@@ -109,16 +109,8 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
   };
 
   const getVersionBadge = (version: string) => {
-    const colors = [
-      "bg-violet-500/15 text-violet-600 dark:text-violet-400 border-violet-500/20",
-      "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/20",
-      "bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border-cyan-500/20",
-    ];
-    const versionNum = parseInt(version.slice(1)) - 1;
-    const colorClass = colors[versionNum % colors.length];
-    
     return (
-      <Badge className={`${colorClass} font-mono text-xs px-2 py-0.5`}>
+      <Badge className="bg-orange-500/10 text-orange-400 border-orange-500/20 font-mono text-xs px-2 py-0.5">
         {version}
       </Badge>
     );
@@ -127,13 +119,13 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
   return (
     <div className="min-h-screen bg-background transition-colors duration-300">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
+      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/90 backdrop-blur-md">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent">
-              <GraduationCap className="h-5 w-5 text-white" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 orange-glow-sm">
+              <GraduationCap className="h-5 w-5 text-black" />
             </div>
-            <h1 className="text-xl font-semibold">Teacher Dashboard</h1>
+            <h1 className="text-xl font-semibold text-foreground">Teacher Dashboard</h1>
           </div>
           <div className="flex items-center gap-3">
             <ThemeToggle />
@@ -141,7 +133,7 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
               variant="outline" 
               size="sm" 
               onClick={onLogout}
-              className="rounded-xl transition-all duration-200 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
+              className="rounded-xl border-border/50 bg-secondary transition-all duration-200 hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30"
             >
               <LogOut className="mr-2 h-4 w-4" />
               Logout
@@ -154,21 +146,21 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
         <div className="grid gap-8 lg:grid-cols-3">
           {/* Create Assignment Section */}
           <div className="lg:col-span-1 space-y-4">
-            <Card className="rounded-2xl shadow-sm">
+            <Card className="rounded-2xl border-border/50 bg-card">
               <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent">
-                    <Plus className="h-4 w-4 text-white" />
+                <CardTitle className="text-base flex items-center gap-2 text-foreground">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-orange-600">
+                    <Plus className="h-4 w-4 text-black" />
                   </div>
                   Create Assignment
                 </CardTitle>
-                <CardDescription>Add a new assignment for students</CardDescription>
+                <CardDescription className="text-muted-foreground">Add a new assignment for students</CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleCreateAssignment}>
                   <FieldGroup>
                     <Field>
-                      <FieldLabel htmlFor="title">Title</FieldLabel>
+                      <FieldLabel htmlFor="title" className="text-foreground">Title</FieldLabel>
                       <Input
                         id="title"
                         placeholder="Assignment title"
@@ -176,12 +168,12 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                         onChange={(e) =>
                           setNewAssignment((prev) => ({ ...prev, title: e.target.value }))
                         }
-                        className="rounded-xl transition-all duration-200 focus:ring-2 focus:ring-primary/20"
+                        className="rounded-xl bg-secondary border-border/50 transition-all duration-200 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500"
                         required
                       />
                     </Field>
                     <Field>
-                      <FieldLabel htmlFor="description">Description</FieldLabel>
+                      <FieldLabel htmlFor="description" className="text-foreground">Description</FieldLabel>
                       <Textarea
                         id="description"
                         placeholder="Assignment description"
@@ -190,12 +182,12 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                           setNewAssignment((prev) => ({ ...prev, description: e.target.value }))
                         }
                         rows={3}
-                        className="rounded-xl resize-none transition-all duration-200 focus:ring-2 focus:ring-primary/20"
+                        className="rounded-xl resize-none bg-secondary border-border/50 transition-all duration-200 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500"
                         required
                       />
                     </Field>
                     <Field>
-                      <FieldLabel htmlFor="deadline">Deadline</FieldLabel>
+                      <FieldLabel htmlFor="deadline" className="text-foreground">Deadline</FieldLabel>
                       <Input
                         id="deadline"
                         type="date"
@@ -203,13 +195,13 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                         onChange={(e) =>
                           setNewAssignment((prev) => ({ ...prev, deadline: e.target.value }))
                         }
-                        className="rounded-xl transition-all duration-200 focus:ring-2 focus:ring-primary/20"
+                        className="rounded-xl bg-secondary border-border/50 transition-all duration-200 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500"
                         required
                       />
                     </Field>
                     <Button 
                       type="submit" 
-                      className="w-full rounded-xl gradient-button text-white transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                      className="w-full rounded-xl gradient-button text-black font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
                     >
                       Create Assignment
                     </Button>
@@ -219,29 +211,29 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
             </Card>
 
             {/* Current Assignments */}
-            <Card className="rounded-2xl shadow-sm">
+            <Card className="rounded-2xl border-border/50 bg-card">
               <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+                <CardTitle className="text-base flex items-center gap-2 text-foreground">
+                  <span className="h-2 w-2 rounded-full bg-orange-400" />
                   Current Assignments
                 </CardTitle>
-                <CardDescription>{assignments.length} assignments created</CardDescription>
+                <CardDescription className="text-muted-foreground">{assignments.length} assignments created</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   {assignments.map((assignment) => (
                     <div
                       key={assignment.id}
-                      className="group p-4 rounded-xl border border-border bg-muted/30 transition-all duration-200 hover:bg-muted/50 hover:shadow-sm"
+                      className="group p-4 rounded-xl border border-border/50 bg-secondary/30 transition-all duration-200 hover:bg-secondary/50 hover:border-orange-500/30"
                     >
-                      <p className="font-medium text-sm group-hover:text-primary transition-colors duration-200">
+                      <p className="font-medium text-sm text-foreground group-hover:text-orange-500 transition-colors duration-200">
                         {assignment.title}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1.5 line-clamp-1">
                         {assignment.description}
                       </p>
                       <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
-                        <Calendar className="h-3 w-3" />
+                        <Calendar className="h-3 w-3 text-orange-500/70" />
                         <span>Due: {assignment.deadline}</span>
                       </div>
                     </div>
@@ -253,25 +245,25 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
 
           {/* Student Submissions Section */}
           <div className="lg:col-span-2">
-            <Card className="rounded-2xl overflow-hidden shadow-sm">
+            <Card className="rounded-2xl overflow-hidden border-border/50 bg-card">
               <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                <CardTitle className="text-base flex items-center gap-2 text-foreground">
+                  <span className="h-2 w-2 rounded-full bg-orange-500" />
                   Student Submissions
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-muted-foreground">
                   View and download student assignment submissions
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-0">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-muted/30 hover:bg-muted/30">
-                      <TableHead className="font-semibold">Student</TableHead>
-                      <TableHead className="font-semibold">Assignment</TableHead>
-                      <TableHead className="font-semibold">Version</TableHead>
-                      <TableHead className="font-semibold">Date</TableHead>
-                      <TableHead className="text-right font-semibold">Action</TableHead>
+                    <TableRow className="bg-secondary/50 hover:bg-secondary/50 border-border/50">
+                      <TableHead className="font-semibold text-foreground">Student</TableHead>
+                      <TableHead className="font-semibold text-foreground">Assignment</TableHead>
+                      <TableHead className="font-semibold text-foreground">Version</TableHead>
+                      <TableHead className="font-semibold text-foreground">Date</TableHead>
+                      <TableHead className="text-right font-semibold text-foreground">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -288,9 +280,9 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                       mockStudentSubmissions.map((submission) => (
                         <TableRow 
                           key={submission.id}
-                          className="transition-colors duration-200 hover:bg-muted/50"
+                          className="transition-colors duration-200 hover:bg-secondary/30 border-border/50"
                         >
-                          <TableCell className="font-medium">
+                          <TableCell className="font-medium text-foreground">
                             {submission.studentName}
                           </TableCell>
                           <TableCell className="text-muted-foreground">
@@ -309,7 +301,7 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                               onClick={() =>
                                 handleDownload(submission.studentName, submission.assignmentName)
                               }
-                              className="rounded-lg hover:bg-primary/10 hover:text-primary transition-all duration-200"
+                              className="rounded-lg hover:bg-orange-500/10 hover:text-orange-500 transition-all duration-200"
                             >
                               <Download className="h-4 w-4" />
                             </Button>

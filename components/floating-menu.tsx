@@ -21,12 +21,12 @@ export function FloatingMenu({
   const iconButtonClass = cn(
     "relative flex items-center justify-center",
     "w-12 h-12 rounded-full",
-    "bg-card/80 backdrop-blur-md",
+    "bg-card/90 backdrop-blur-md",
     "border border-border/50",
-    "shadow-lg shadow-black/5 dark:shadow-black/20",
+    "shadow-lg shadow-black/20",
     "transition-all duration-300 ease-out",
-    "hover:scale-110 hover:shadow-xl hover:shadow-primary/20",
-    "hover:border-primary/30",
+    "hover:scale-110 hover:shadow-xl hover:shadow-orange-500/20",
+    "hover:border-orange-500/40",
     "active:scale-95",
     "group"
   );
@@ -34,7 +34,7 @@ export function FloatingMenu({
   const iconClass = cn(
     "w-5 h-5 text-muted-foreground",
     "transition-colors duration-300",
-    "group-hover:text-primary"
+    "group-hover:text-orange-500"
   );
 
   return (
@@ -43,10 +43,10 @@ export function FloatingMenu({
       <div
         className={cn(
           "flex items-center gap-3 px-4 py-3",
-          "bg-card/60 backdrop-blur-xl",
+          "bg-card/70 backdrop-blur-xl",
           "border border-border/40",
           "rounded-full",
-          "shadow-2xl shadow-black/10 dark:shadow-black/30"
+          "shadow-2xl shadow-black/30"
         )}
       >
         {/* Home button */}
@@ -73,10 +73,10 @@ export function FloatingMenu({
           className={cn(
             "relative flex items-center justify-center",
             "w-16 h-16 rounded-full",
-            "bg-gradient-to-br from-indigo-500 via-blue-500 to-purple-600",
-            "shadow-xl shadow-indigo-500/30 dark:shadow-indigo-500/20",
+            "bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700",
+            "shadow-xl shadow-orange-500/40",
             "transition-all duration-300 ease-out",
-            "hover:scale-110 hover:shadow-2xl hover:shadow-indigo-500/40",
+            "hover:scale-110 hover:shadow-2xl hover:shadow-orange-500/50",
             "active:scale-95",
             "group"
           )}
@@ -86,13 +86,13 @@ export function FloatingMenu({
           <div
             className={cn(
               "absolute inset-0 rounded-full",
-              "bg-gradient-to-br from-indigo-400 via-blue-400 to-purple-500",
+              "bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600",
               "opacity-0 blur-md",
               "transition-opacity duration-300",
-              "group-hover:opacity-60"
+              "group-hover:opacity-70"
             )}
           />
-          <Plus className="relative w-7 h-7 text-white transition-transform duration-300 group-hover:rotate-90" />
+          <Plus className="relative w-7 h-7 text-black transition-transform duration-300 group-hover:rotate-90" />
         </button>
 
         {/* Share button */}

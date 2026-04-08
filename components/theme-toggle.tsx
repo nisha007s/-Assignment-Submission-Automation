@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Moon, Sun } from "lucide-react";
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [theme, setTheme] = useState<"light" | "dark">("dark");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -16,9 +16,9 @@ export function ThemeToggle() {
       setTheme(stored);
       document.documentElement.classList.toggle("dark", stored === "dark");
     } else {
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      setTheme(prefersDark ? "dark" : "light");
-      document.documentElement.classList.toggle("dark", prefersDark);
+      // Default to dark for the orange/black theme
+      setTheme("dark");
+      document.documentElement.classList.add("dark");
     }
   }, []);
 
@@ -31,7 +31,7 @@ export function ThemeToggle() {
 
   if (!mounted) {
     return (
-      <Button variant="ghost" size="icon" className="rounded-full w-9 h-9">
+      <Button variant="ghost" size="icon" className="rounded-full w-9 h-9 bg-secondary border-border/50">
         <span className="sr-only">Toggle theme</span>
       </Button>
     );
@@ -42,7 +42,7 @@ export function ThemeToggle() {
       variant="ghost"
       size="icon"
       onClick={toggleTheme}
-      className="rounded-full w-9 h-9 transition-all duration-300 hover:bg-secondary"
+      className="rounded-full w-9 h-9 bg-secondary border border-border/50 transition-all duration-300 hover:bg-orange-500/10 hover:border-orange-500/30 hover:text-orange-500"
     >
       {theme === "light" ? (
         <Moon className="h-5 w-5 transition-transform duration-300" />
