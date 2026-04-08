@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -11,8 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { FieldGroup, Field, FieldLabel } from "@/components/ui/field";
-import { Upload } from "lucide-react";
+import { Upload, FileText, X } from "lucide-react";
 
 interface UploadModalProps {
   open: boolean;
@@ -23,10 +21,30 @@ interface UploadModalProps {
 
 export function UploadModal({ open, onOpenChange, assignmentTitle, onSubmit }: UploadModalProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setSelectedFile(e.target.files[0]);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      setSelectedFile(e.dataTransfer.files[0]);
     }
   };
 
@@ -39,40 +57,109 @@ export function UploadModal({ open, onOpenChange, assignmentTitle, onSubmit }: U
     }
   };
 
+  const clearFile = () => {
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md rounded-2xl">
         <DialogHeader>
-          <DialogTitle>Upload Assignment</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent">
+              <Upload className="h-4 w-4 text-white" />
+            </div>
+            Upload Assignment
+          </DialogTitle>
           <DialogDescription>
-            Submit your work for: {assignmentTitle}
+            Submit your work for: <span className="font-medium text-foreground">{assignmentTitle}</span>
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
-          <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="file">Select File</FieldLabel>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="file"
-                  type="file"
-                  onChange={handleFileChange}
-                  className="cursor-pointer"
-                  required
-                />
-              </div>
-              {selectedFile && (
-                <p className="text-sm text-muted-foreground mt-1">
-                  Selected: {selectedFile.name}
-                </p>
+          <div className="space-y-4">
+            {/* Drop Zone */}
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              className={`
+                relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer
+                transition-all duration-300
+                ${isDragging 
+                  ? "border-primary bg-primary/5 scale-[1.02]" 
+                  : "border-border hover:border-primary/50 hover:bg-muted/50"
+                }
+                ${selectedFile ? "border-accent bg-accent/5" : ""}
+              `}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+              
+              {selectedFile ? (
+                <div className="flex flex-col items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent/15">
+                    <FileText className="h-6 w-6 text-accent" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="font-medium text-sm">{selectedFile.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {(selectedFile.size / 1024).toFixed(1)} KB
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      clearFile();
+                    }}
+                    className="text-muted-foreground hover:text-destructive"
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Remove
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted">
+                    <Upload className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="font-medium text-sm">
+                      Drop your file here or click to browse
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      PDF, DOC, DOCX, ZIP up to 10MB
+                    </p>
+                  </div>
+                </div>
               )}
-            </Field>
-          </FieldGroup>
-          <DialogFooter className="mt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            </div>
+          </div>
+          
+          <DialogFooter className="mt-6 gap-2">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => onOpenChange(false)}
+              className="rounded-xl"
+            >
               Cancel
             </Button>
-            <Button type="submit" disabled={!selectedFile}>
+            <Button 
+              type="submit" 
+              disabled={!selectedFile}
+              className="rounded-xl gradient-button text-white transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100"
+            >
               <Upload className="mr-2 h-4 w-4" />
               Submit
             </Button>
