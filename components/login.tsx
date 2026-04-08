@@ -26,17 +26,17 @@ export function Login({ onLogin }: LoginProps) {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-screen flex-col bg-muted dark:bg-background">
       {/* Header with theme toggle */}
       <header className="absolute top-0 right-0 p-4">
         <ThemeToggle />
       </header>
 
       <div className="flex flex-1 items-center justify-center p-4">
-        <Card className="w-full max-w-md rounded-2xl border-border/50 bg-card shadow-2xl transition-all duration-300 hover:orange-glow-sm">
+        <Card className="w-full max-w-md rounded-2xl border border-border bg-card shadow-lg dark:shadow-2xl transition-all duration-300 hover:shadow-xl dark:hover:orange-glow-sm">
           <CardHeader className="text-center pb-2">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 orange-glow-sm">
-              <BookOpen className="h-7 w-7 text-black" />
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg shadow-orange-500/30">
+              <BookOpen className="h-7 w-7 text-white" />
             </div>
             <CardTitle className="text-2xl font-bold text-orange-500">
               Assignment Submission
@@ -56,7 +56,7 @@ export function Login({ onLogin }: LoginProps) {
                     placeholder="Enter your email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="h-11 rounded-xl bg-secondary border-border/50 transition-all duration-200 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500"
+                    className="h-11 rounded-xl bg-secondary border-border transition-all duration-200 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500"
                     required
                   />
                 </Field>
@@ -68,17 +68,17 @@ export function Login({ onLogin }: LoginProps) {
                     placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="h-11 rounded-xl bg-secondary border-border/50 transition-all duration-200 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500"
+                    className="h-11 rounded-xl bg-secondary border-border transition-all duration-200 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500"
                     required
                   />
                 </Field>
                 <Field>
                   <FieldLabel htmlFor="role" className="text-foreground">Role</FieldLabel>
                   <Select value={role} onValueChange={(v) => setRole(v as "student" | "teacher")}>
-                    <SelectTrigger id="role" className="h-11 rounded-xl bg-secondary border-border/50">
+                    <SelectTrigger id="role" className="h-11 rounded-xl bg-secondary border-border">
                       <SelectValue placeholder="Select your role" />
                     </SelectTrigger>
-                    <SelectContent className="rounded-xl bg-card border-border/50">
+                    <SelectContent className="rounded-xl bg-card border-border">
                       <SelectItem value="student">Student</SelectItem>
                       <SelectItem value="teacher">Teacher</SelectItem>
                     </SelectContent>
@@ -86,7 +86,7 @@ export function Login({ onLogin }: LoginProps) {
                 </Field>
                 <Button 
                   type="submit" 
-                  className="w-full mt-4 h-11 rounded-xl gradient-button text-black font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                  className="w-full mt-4 h-11 rounded-xl gradient-button font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
                 >
                   Sign In
                 </Button>

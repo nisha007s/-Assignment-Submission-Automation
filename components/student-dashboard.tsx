@@ -98,19 +98,19 @@ export function StudentDashboard({ userName, onLogout }: StudentDashboardProps) 
     switch (status) {
       case "submitted":
         return (
-          <Badge className="bg-orange-500/15 text-orange-500 border-orange-500/30 hover:bg-orange-500/25">
+          <Badge className="bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-500/15 dark:text-orange-500 dark:border-orange-500/30 hover:bg-orange-200 dark:hover:bg-orange-500/25">
             Submitted
           </Badge>
         );
       case "under review":
         return (
-          <Badge className="bg-amber-500/15 text-amber-500 border-amber-500/30 hover:bg-amber-500/25">
+          <Badge className="bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/15 dark:text-amber-500 dark:border-amber-500/30 hover:bg-amber-200 dark:hover:bg-amber-500/25">
             Under Review
           </Badge>
         );
       case "graded":
         return (
-          <Badge className="bg-emerald-500/15 text-emerald-500 border-emerald-500/30 hover:bg-emerald-500/25">
+          <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-500 dark:border-emerald-500/30 hover:bg-emerald-200 dark:hover:bg-emerald-500/25">
             Graded
           </Badge>
         );
@@ -121,20 +121,20 @@ export function StudentDashboard({ userName, onLogout }: StudentDashboardProps) 
 
   const getVersionBadge = (version: string) => {
     return (
-      <Badge className="bg-orange-500/10 text-orange-400 border-orange-500/20 font-mono text-xs px-2 py-0.5">
+      <Badge className="bg-orange-100 text-orange-600 border-orange-200 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20 font-mono text-xs px-2 py-0.5">
         {version}
       </Badge>
     );
   };
 
   return (
-    <div className="min-h-screen bg-background transition-colors duration-300">
+    <div className="min-h-screen bg-muted dark:bg-background transition-colors duration-300">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/90 backdrop-blur-md">
+      <header className="sticky top-0 z-50 border-b border-border bg-card/95 dark:bg-background/90 backdrop-blur-md">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 orange-glow-sm">
-              <FileText className="h-5 w-5 text-black" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg shadow-orange-500/30">
+              <FileText className="h-5 w-5 text-white" />
             </div>
             <h1 className="text-xl font-semibold text-foreground">Student Dashboard</h1>
           </div>
@@ -147,7 +147,7 @@ export function StudentDashboard({ userName, onLogout }: StudentDashboardProps) 
               variant="outline" 
               size="sm" 
               onClick={onLogout}
-              className="rounded-xl border-border/50 bg-secondary transition-all duration-200 hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30"
+              className="rounded-xl border-border bg-card dark:bg-secondary transition-all duration-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 dark:hover:bg-red-500/10 dark:hover:text-red-500 dark:hover:border-red-500/30"
             >
               <LogOut className="mr-2 h-4 w-4" />
               Logout
@@ -168,7 +168,7 @@ export function StudentDashboard({ userName, onLogout }: StudentDashboardProps) 
               {mockAssignments.map((assignment) => (
                 <Card 
                   key={assignment.id}
-                  className="group rounded-2xl border-border/50 bg-card transition-all duration-300 hover:orange-glow-sm hover:-translate-y-1"
+                  className="group rounded-2xl border border-border bg-card shadow-sm hover:shadow-lg dark:shadow-none transition-all duration-300 hover:-translate-y-1 dark:hover:orange-glow-sm"
                 >
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base font-semibold text-foreground group-hover:text-orange-500 transition-colors duration-200">
@@ -181,13 +181,13 @@ export function StudentDashboard({ userName, onLogout }: StudentDashboardProps) 
                   <CardContent>
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Calendar className="h-4 w-4 text-orange-500/70" />
+                        <Calendar className="h-4 w-4 text-orange-500" />
                         <span>Due: {assignment.deadline}</span>
                       </div>
                       <Button
                         size="sm"
                         onClick={() => handleUploadClick(assignment.title)}
-                        className="rounded-xl gradient-button text-black font-medium transition-all duration-300 hover:scale-105 active:scale-95"
+                        className="rounded-xl gradient-button font-medium transition-all duration-300 hover:scale-105 active:scale-95"
                       >
                         <Upload className="mr-2 h-4 w-4" />
                         Upload
@@ -205,11 +205,11 @@ export function StudentDashboard({ userName, onLogout }: StudentDashboardProps) 
               <span className="h-2 w-2 rounded-full bg-orange-400" />
               My Submissions
             </h2>
-            <Card className="rounded-2xl overflow-hidden border-border/50 bg-card">
+            <Card className="rounded-2xl overflow-hidden border border-border bg-card shadow-sm dark:shadow-none">
               <CardContent className="p-0">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-secondary/50 hover:bg-secondary/50 border-border/50">
+                    <TableRow className="bg-muted/50 dark:bg-secondary/50 hover:bg-muted/50 dark:hover:bg-secondary/50 border-border">
                       <TableHead className="font-semibold text-foreground">Assignment</TableHead>
                       <TableHead className="font-semibold text-foreground">Version</TableHead>
                       <TableHead className="font-semibold text-foreground">Upload Date</TableHead>
@@ -230,7 +230,7 @@ export function StudentDashboard({ userName, onLogout }: StudentDashboardProps) 
                       submissions.map((submission) => (
                         <TableRow 
                           key={submission.id}
-                          className="transition-colors duration-200 hover:bg-secondary/30 border-border/50"
+                          className="transition-colors duration-200 hover:bg-muted/30 dark:hover:bg-secondary/30 border-border"
                         >
                           <TableCell className="font-medium text-foreground">
                             {submission.assignmentName}

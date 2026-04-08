@@ -110,20 +110,20 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
 
   const getVersionBadge = (version: string) => {
     return (
-      <Badge className="bg-orange-500/10 text-orange-400 border-orange-500/20 font-mono text-xs px-2 py-0.5">
+      <Badge className="bg-orange-100 text-orange-600 border-orange-200 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20 font-mono text-xs px-2 py-0.5">
         {version}
       </Badge>
     );
   };
 
   return (
-    <div className="min-h-screen bg-background transition-colors duration-300">
+    <div className="min-h-screen bg-muted dark:bg-background transition-colors duration-300">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/90 backdrop-blur-md">
+      <header className="sticky top-0 z-50 border-b border-border bg-card/95 dark:bg-background/90 backdrop-blur-md">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 orange-glow-sm">
-              <GraduationCap className="h-5 w-5 text-black" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg shadow-orange-500/30">
+              <GraduationCap className="h-5 w-5 text-white" />
             </div>
             <h1 className="text-xl font-semibold text-foreground">Teacher Dashboard</h1>
           </div>
@@ -133,7 +133,7 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
               variant="outline" 
               size="sm" 
               onClick={onLogout}
-              className="rounded-xl border-border/50 bg-secondary transition-all duration-200 hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30"
+              className="rounded-xl border-border bg-card dark:bg-secondary transition-all duration-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 dark:hover:bg-red-500/10 dark:hover:text-red-500 dark:hover:border-red-500/30"
             >
               <LogOut className="mr-2 h-4 w-4" />
               Logout
@@ -146,11 +146,11 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
         <div className="grid gap-8 lg:grid-cols-3">
           {/* Create Assignment Section */}
           <div className="lg:col-span-1 space-y-4">
-            <Card className="rounded-2xl border-border/50 bg-card">
+            <Card className="rounded-2xl border border-border bg-card shadow-sm dark:shadow-none">
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2 text-foreground">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-orange-600">
-                    <Plus className="h-4 w-4 text-black" />
+                    <Plus className="h-4 w-4 text-white" />
                   </div>
                   Create Assignment
                 </CardTitle>
@@ -168,7 +168,7 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                         onChange={(e) =>
                           setNewAssignment((prev) => ({ ...prev, title: e.target.value }))
                         }
-                        className="rounded-xl bg-secondary border-border/50 transition-all duration-200 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500"
+                        className="rounded-xl bg-secondary border-border transition-all duration-200 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500"
                         required
                       />
                     </Field>
@@ -182,7 +182,7 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                           setNewAssignment((prev) => ({ ...prev, description: e.target.value }))
                         }
                         rows={3}
-                        className="rounded-xl resize-none bg-secondary border-border/50 transition-all duration-200 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500"
+                        className="rounded-xl resize-none bg-secondary border-border transition-all duration-200 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500"
                         required
                       />
                     </Field>
@@ -195,13 +195,13 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                         onChange={(e) =>
                           setNewAssignment((prev) => ({ ...prev, deadline: e.target.value }))
                         }
-                        className="rounded-xl bg-secondary border-border/50 transition-all duration-200 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500"
+                        className="rounded-xl bg-secondary border-border transition-all duration-200 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500"
                         required
                       />
                     </Field>
                     <Button 
                       type="submit" 
-                      className="w-full rounded-xl gradient-button text-black font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                      className="w-full rounded-xl gradient-button font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
                     >
                       Create Assignment
                     </Button>
@@ -211,7 +211,7 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
             </Card>
 
             {/* Current Assignments */}
-            <Card className="rounded-2xl border-border/50 bg-card">
+            <Card className="rounded-2xl border border-border bg-card shadow-sm dark:shadow-none">
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2 text-foreground">
                   <span className="h-2 w-2 rounded-full bg-orange-400" />
@@ -224,7 +224,7 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                   {assignments.map((assignment) => (
                     <div
                       key={assignment.id}
-                      className="group p-4 rounded-xl border border-border/50 bg-secondary/30 transition-all duration-200 hover:bg-secondary/50 hover:border-orange-500/30"
+                      className="group p-4 rounded-xl border border-border bg-muted/30 dark:bg-secondary/30 transition-all duration-200 hover:bg-muted/50 dark:hover:bg-secondary/50 hover:border-orange-500/30"
                     >
                       <p className="font-medium text-sm text-foreground group-hover:text-orange-500 transition-colors duration-200">
                         {assignment.title}
@@ -233,7 +233,7 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                         {assignment.description}
                       </p>
                       <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
-                        <Calendar className="h-3 w-3 text-orange-500/70" />
+                        <Calendar className="h-3 w-3 text-orange-500" />
                         <span>Due: {assignment.deadline}</span>
                       </div>
                     </div>
@@ -245,7 +245,7 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
 
           {/* Student Submissions Section */}
           <div className="lg:col-span-2">
-            <Card className="rounded-2xl overflow-hidden border-border/50 bg-card">
+            <Card className="rounded-2xl overflow-hidden border border-border bg-card shadow-sm dark:shadow-none">
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2 text-foreground">
                   <span className="h-2 w-2 rounded-full bg-orange-500" />
@@ -258,7 +258,7 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
               <CardContent className="p-0">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-secondary/50 hover:bg-secondary/50 border-border/50">
+                    <TableRow className="bg-muted/50 dark:bg-secondary/50 hover:bg-muted/50 dark:hover:bg-secondary/50 border-border">
                       <TableHead className="font-semibold text-foreground">Student</TableHead>
                       <TableHead className="font-semibold text-foreground">Assignment</TableHead>
                       <TableHead className="font-semibold text-foreground">Version</TableHead>
@@ -280,7 +280,7 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                       mockStudentSubmissions.map((submission) => (
                         <TableRow 
                           key={submission.id}
-                          className="transition-colors duration-200 hover:bg-secondary/30 border-border/50"
+                          className="transition-colors duration-200 hover:bg-muted/30 dark:hover:bg-secondary/30 border-border"
                         >
                           <TableCell className="font-medium text-foreground">
                             {submission.studentName}
@@ -301,7 +301,7 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                               onClick={() =>
                                 handleDownload(submission.studentName, submission.assignmentName)
                               }
-                              className="rounded-lg hover:bg-orange-500/10 hover:text-orange-500 transition-all duration-200"
+                              className="rounded-lg hover:bg-orange-100 hover:text-orange-600 dark:hover:bg-orange-500/10 dark:hover:text-orange-500 transition-all duration-200"
                             >
                               <Download className="h-4 w-4" />
                             </Button>

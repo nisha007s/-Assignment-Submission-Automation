@@ -3,25 +3,26 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Light mode (default) */
 :root {
-  --background: #0B0B0F;
-  --foreground: #F5F5F5;
-  --card: #121218;
-  --card-foreground: #F5F5F5;
-  --popover: #121218;
-  --popover-foreground: #F5F5F5;
+  --background: #FFFFFF;
+  --foreground: #111827;
+  --card: #FFFFFF;
+  --card-foreground: #111827;
+  --popover: #FFFFFF;
+  --popover-foreground: #111827;
   --primary: #F97316;
-  --primary-foreground: #0B0B0F;
-  --secondary: #1A1A22;
-  --secondary-foreground: #F5F5F5;
-  --muted: #1A1A22;
-  --muted-foreground: #8B8B8B;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F3F4F6;
+  --secondary-foreground: #111827;
+  --muted: #F9FAFB;
+  --muted-foreground: #6B7280;
   --accent: #FB923C;
-  --accent-foreground: #0B0B0F;
+  --accent-foreground: #111827;
   --destructive: #EF4444;
-  --destructive-foreground: #F5F5F5;
-  --border: #2A2A35;
-  --input: #1A1A22;
+  --destructive-foreground: #FFFFFF;
+  --border: #E5E7EB;
+  --input: #F3F4F6;
   --ring: #F97316;
   --chart-1: #F97316;
   --chart-2: #FB923C;
@@ -29,16 +30,17 @@
   --chart-4: #FED7AA;
   --chart-5: #EA580C;
   --radius: 0.75rem;
-  --sidebar: #0F0F14;
-  --sidebar-foreground: #F5F5F5;
+  --sidebar: #F9FAFB;
+  --sidebar-foreground: #111827;
   --sidebar-primary: #F97316;
-  --sidebar-primary-foreground: #0B0B0F;
-  --sidebar-accent: #1A1A22;
-  --sidebar-accent-foreground: #F5F5F5;
-  --sidebar-border: #2A2A35;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #F3F4F6;
+  --sidebar-accent-foreground: #111827;
+  --sidebar-border: #E5E7EB;
   --sidebar-ring: #F97316;
 }
 
+/* Dark mode */
 .dark {
   --background: #0B0B0F;
   --foreground: #F5F5F5;
@@ -128,13 +130,24 @@
 @layer utilities {
   .gradient-border {
     position: relative;
-    background: linear-gradient(var(--card), var(--card)) padding-box,
-                linear-gradient(135deg, #F97316, #EA580C) border-box;
     border: 1px solid transparent;
+  }
+  
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, #F97316, #EA580C);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
   }
   
   .gradient-button {
     background: linear-gradient(135deg, #F97316, #EA580C);
+    color: white;
   }
   
   .gradient-button:hover {
@@ -148,5 +161,14 @@
 
   .orange-glow-sm {
     box-shadow: 0 0 15px rgba(249, 115, 22, 0.2);
+  }
+
+  /* Light mode specific shadows */
+  .card-shadow {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  }
+
+  .card-shadow-lg {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   }
 }
