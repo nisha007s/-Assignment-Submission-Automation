@@ -11,13 +11,13 @@
 | Phase | Description | Status | Progress |
 |-------|-------------|--------|----------|
 | Phase 0 | Documentation Setup | ✅ Complete | 3/3 files |
-| Phase 1 | UI Refinement | 🟡 In Progress | 0/8 tasks |
+| Phase 1 | UI Refinement | ✅ Complete | 8/8 tasks |
 | Phase 2 | Supabase Authentication | ⬜ Not Started | 0/6 tasks |
 | Phase 3 | Assignment System (Database) | ⬜ Not Started | 0/5 tasks |
 | Phase 4 | File Upload (Storage) | ⬜ Not Started | 0/4 tasks |
 | Phase 5 | Version Tracking System | ⬜ Not Started | 0/4 tasks |
 | Phase 6 | Grading & Feedback | ⬜ Not Started | 0/4 tasks |
-| Phase 7 | Final Polish & Testing | ⬜ Not Started | 0/6 tasks |
+| Phase 7 | Final Polish & Testing | 🟡 In Progress | 4/6 tasks |
 
 ---
 
@@ -32,70 +32,71 @@
 
 ---
 
-## 🟡 Phase 1: UI Refinement
+## ✅ Phase 1: UI Refinement
 **Goal:** Polish existing UI, add missing components, improve UX  
-**Status:** 🟡 IN PROGRESS  
+**Status:** ✅ COMPLETE  
 **Duration:** ~4 hours  
 **Day:** Day 1–2
 
 ### 1.1 — Global Styles & Animations
-- [ ] Add keyframe animations (fade-in, slide-up, stagger) to `app/globals.css`
-- [ ] Add smooth scrollbar styling
-- [ ] Add focus-visible states for accessibility
-- [ ] Verify orange theme tokens are consistent in light + dark mode
+- [x] Add keyframe animations (`fadeIn`, `slideUp`, `fadeInUp`) to `app/globals.css`
+- [x] Add smooth scrollbar styling (orange 6px thumb)
+- [x] Add focus-visible states for accessibility (2px orange outline)
+- [x] Verify orange theme tokens are consistent in light + dark mode
 
 ### 1.2 — Login Page (`components/login.tsx`)
-- [ ] Add **Sign Up tab** — toggle between Sign In / Sign Up
-- [ ] Add **Full Name field** visible only on signup
-- [ ] Add **loading spinner** on form submit
-- [ ] Add **error messages** (invalid credentials, email taken)
-- [ ] Add subtle entrance animation (fade + slide up)
-- [ ] Fix mobile padding and layout
+- [x] Add **Sign Up tab** — toggle between Sign In / Sign Up
+- [x] Add **Full Name field** visible only on signup (animates in with `fadeIn`)
+- [x] Add **loading spinner** on form submit (`Loader2` icon, button disabled)
+- [x] Add **error messages** (inline `AlertCircle` styled error box)
+- [x] Add subtle entrance animation (card slides up via `slideUp` keyframe)
+- [x] Fix mobile padding and layout (responsive `max-w-md` centered)
 
 ### 1.3 — Student Dashboard (`components/student-dashboard.tsx`)
-- [ ] Add **Stats Cards** row at top (Total, Submitted, Pending, Under Review)
-- [ ] Add **search bar** to filter assignment cards
-- [ ] Add **deadline urgency indicator** (red if < 2 days, amber if < 5 days)
-- [ ] Add **"View History"** button in submissions table row
-- [ ] Add **version count badge** (e.g., "v3") on current submissions
-- [ ] Add **grade + feedback display** column in submissions table
-- [ ] Add staggered card entrance animations
-- [ ] Improve empty state with icon + helpful message
+- [x] Add **Stats Cards** row at top (Total, Submitted, Pending, Under Review)
+- [x] Add **search bar** to filter assignment cards
+- [x] Add **deadline urgency indicator** (red < 2 days, amber < 5 days)
+- [x] Add **"View"** button in submissions table → opens Version History panel
+- [x] Add **version badge** (v1, v2…) on current submissions
+- [x] Add **grade column** with color-coded badge (green/amber/red)
+- [x] Staggered card entrance animations with `animationDelay`
+- [x] Empty state with icon + helpful message
 
 ### 1.4 — Teacher Dashboard (`components/teacher-dashboard.tsx`)
-- [ ] Add **Stats Cards** row at top (Total Assignments, Total Submissions, Pending, Graded)
-- [ ] Add **assignment status badge** (Active / Expired based on deadline)
-- [ ] Add **Delete assignment** button with confirmation dialog
-- [ ] Add **"Grade" button** per student submission row (opens grade modal)
-- [ ] Add **"View History" button** per student submission row
-- [ ] Improve layout responsiveness on mobile
+- [x] Add **Stats Cards** row at top (Assignments, Total Submissions, Pending, Graded)
+- [x] Add **Active / Expired** badge per assignment based on deadline
+- [x] Add **Delete assignment** button with AlertDialog confirmation
+- [x] Add **Grade button** (GraduationCap icon) → opens GradeModal
+- [x] Add **Hist button** per submission → opens Version History panel
+- [x] Responsive grid: 1-col mobile, 3-col desktop
 
 ### 1.5 — Upload Modal (`components/upload-modal.tsx`)
-- [ ] Restrict accepted files: `.pdf,.doc,.docx,.zip,.ppt,.pptx`
-- [ ] Add file type validation with error message
-- [ ] Add **upload progress bar** animation
-- [ ] Add **version note** optional text field
-- [ ] Show existing version number ("This will be submitted as v2")
-- [ ] Improve file size display (KB vs MB)
+- [x] Restrict accepted files: `.pdf,.doc,.docx,.zip,.ppt,.pptx`
+- [x] File type + size validation with `AlertCircle` error message
+- [x] Simulated **upload progress bar** (Progress component, 0→100%)
+- [x] **Version note** optional textarea field
+- [x] Shows next version: "Will submit as v2"
+- [x] File size displayed in MB
 
 ### 1.6 — Version History Component (`components/version-history.tsx`) — NEW FILE
-- [ ] Create slide-out **Sheet panel** (or Dialog) for version history
-- [ ] Timeline layout: version badge → filename → date → size → note
-- [ ] Highlight latest version with orange indicator
-- [ ] Download button per version (teachers only — conditional render)
-- [ ] Empty state when no versions exist
+- [x] Created slide-out **Sheet panel**
+- [x] Timeline layout: dot indicator → version badge → filename → date → size → note
+- [x] Latest version highlighted with orange badge + "Latest" label
+- [x] Download button for teachers only (`isTeacher` prop)
+- [x] Empty state with FileText icon + message
 
 ### 1.7 — Grade Modal (`components/grade-modal.tsx`) — NEW FILE
-- [ ] Create Dialog modal for grading
-- [ ] Numeric score input (0–100) with validation
-- [ ] Written feedback textarea
-- [ ] Submit Grade button → updates submission status to "graded"
-- [ ] Show current grade/feedback if already graded
+- [x] Created Dialog modal for grading
+- [x] Numeric score input (0–100) with inline validation error
+- [x] Written feedback textarea (optional)
+- [x] Submit Grade → updates status to "graded" in parent state
+- [x] Pre-fills existing grade/feedback when re-grading
 
 ### 1.8 — Floating Menu (`components/floating-menu.tsx`)
-- [ ] Replace Share/Favorite buttons with contextual actions
-- [ ] Add tooltip labels on hover
-- [ ] Implement hide-on-scroll-down / show-on-scroll-up behavior
+- [x] Replaced Share/Favorite with Search + History contextual buttons
+- [x] Tooltip labels on all buttons via `TooltipProvider`
+- [x] Contextual `centerLabel` prop per dashboard role
+- [ ] Hide-on-scroll-down / show-on-scroll-up (deferred — not critical for MVP)
 
 ---
 

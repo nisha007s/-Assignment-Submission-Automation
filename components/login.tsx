@@ -4,52 +4,103 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FieldGroup, Field, FieldLabel } from "@/components/ui/field";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { BookOpen } from "lucide-react";
+import { BookOpen, Loader2, AlertCircle } from "lucide-react";
 
 interface LoginProps {
   onLogin: (role: "student" | "teacher", email: string) => void;
 }
 
 export function Login({ onLogin }: LoginProps) {
+  const [tab, setTab] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
   const [role, setRole] = useState<"student" | "teacher">("student");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const isSignup = tab === "signup";
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email && password) {
-      onLogin(role, email);
-    }
+    setError("");
+
+    if (!email || !password) { setError("Please fill in all required fields."); return; }
+    if (isSignup && !name.trim()) { setError("Please enter your full name."); return; }
+
+    setLoading(true);
+    // Simulate brief async (replaced by real auth in Phase 2)
+    await new Promise(r => setTimeout(r, 600));
+    setLoading(false);
+    onLogin(role, email);
+  };
+
+  const switchTab = (t: "signin" | "signup") => {
+    setTab(t);
+    setError("");
   };
 
   return (
     <div className="flex min-h-screen flex-col bg-muted dark:bg-background">
-      {/* Header with theme toggle */}
-      <header className="absolute top-0 right-0 p-4">
+      <header className="absolute top-0 right-0 p-4 z-10">
         <ThemeToggle />
       </header>
 
       <div className="flex flex-1 items-center justify-center p-4">
-        <Card className="w-full max-w-md rounded-2xl border border-border bg-card shadow-lg dark:shadow-2xl transition-all duration-300 hover:shadow-xl dark:hover:orange-glow-sm">
-          <CardHeader className="text-center pb-2">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg shadow-orange-500/30">
-              <BookOpen className="h-7 w-7 text-white" />
-            </div>
-            <CardTitle className="text-2xl font-bold text-orange-500">
-              Assignment Submission
-            </CardTitle>
-            <CardDescription className="text-muted-foreground">
-              Sign in to access your dashboard
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-4">
-            <form onSubmit={handleSubmit}>
-              <FieldGroup>
-                <Field>
-                  <FieldLabel htmlFor="email" className="text-foreground">Email</FieldLabel>
+        {/* Entrance animation */}
+        <div className="w-full max-w-md" style={{ animation: "slideUp 0.4s ease both" }}>
+          <Card className="rounded-2xl border border-border bg-card shadow-lg dark:shadow-2xl transition-shadow duration-300">
+            {/* Logo + title */}
+            <CardHeader className="text-center pb-2">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg shadow-orange-500/30">
+                <BookOpen className="h-7 w-7 text-white" />
+              </div>
+              <CardTitle className="text-2xl font-bold text-orange-500">Assignment Submission</CardTitle>
+              <CardDescription className="text-muted-foreground">
+                {isSignup ? "Create your account" : "Sign in to access your dashboard"}
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent className="pt-2">
+              {/* Sign In / Sign Up Tab Toggle */}
+              <div className="flex rounded-xl bg-muted dark:bg-secondary p-1 mb-5">
+                {(["signin", "signup"] as const).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => switchTab(t)}
+                    className={`flex-1 py-1.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+                      tab === t
+                        ? "bg-card shadow-sm text-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {t === "signin" ? "Sign In" : "Sign Up"}
+                  </button>
+                ))}
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-3">
+                {/* Full Name — only in Sign Up mode */}
+                {isSignup && (
+                  <div className="space-y-1.5" style={{ animation: "fadeIn 0.25s ease both" }}>
+                    <label htmlFor="name" className="text-sm font-medium text-foreground">Full Name</label>
+                    <Input
+                      id="name"
+                      type="text"
+                      placeholder="Enter your full name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="h-11 rounded-xl bg-secondary border-border transition-all duration-200 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500"
+                    />
+                  </div>
+                )}
+
+                {/* Email */}
+                <div className="space-y-1.5">
+                  <label htmlFor="email" className="text-sm font-medium text-foreground">Email</label>
                   <Input
                     id="email"
                     type="email"
@@ -59,9 +110,11 @@ export function Login({ onLogin }: LoginProps) {
                     className="h-11 rounded-xl bg-secondary border-border transition-all duration-200 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500"
                     required
                   />
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor="password" className="text-foreground">Password</FieldLabel>
+                </div>
+
+                {/* Password */}
+                <div className="space-y-1.5">
+                  <label htmlFor="password" className="text-sm font-medium text-foreground">Password</label>
                   <Input
                     id="password"
                     type="password"
@@ -71,9 +124,11 @@ export function Login({ onLogin }: LoginProps) {
                     className="h-11 rounded-xl bg-secondary border-border transition-all duration-200 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500"
                     required
                   />
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor="role" className="text-foreground">Role</FieldLabel>
+                </div>
+
+                {/* Role */}
+                <div className="space-y-1.5">
+                  <label htmlFor="role" className="text-sm font-medium text-foreground">Role</label>
                   <Select value={role} onValueChange={(v) => setRole(v as "student" | "teacher")}>
                     <SelectTrigger id="role" className="h-11 rounded-xl bg-secondary border-border">
                       <SelectValue placeholder="Select your role" />
@@ -83,17 +138,47 @@ export function Login({ onLogin }: LoginProps) {
                       <SelectItem value="teacher">Teacher</SelectItem>
                     </SelectContent>
                   </Select>
-                </Field>
-                <Button 
-                  type="submit" 
-                  className="w-full mt-4 h-11 rounded-xl gradient-button font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                </div>
+
+                {/* Error message */}
+                {error && (
+                  <div className="flex items-center gap-2 rounded-lg bg-red-50 dark:bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-400">
+                    <AlertCircle className="h-4 w-4 shrink-0" />
+                    {error}
+                  </div>
+                )}
+
+                {/* Submit button with loading state */}
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full mt-2 h-11 rounded-xl gradient-button font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100"
                 >
-                  Sign In
+                  {loading ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      {isSignup ? "Creating account..." : "Signing in..."}
+                    </span>
+                  ) : (
+                    isSignup ? "Create Account" : "Sign In"
+                  )}
                 </Button>
-              </FieldGroup>
-            </form>
-          </CardContent>
-        </Card>
+
+                {/* Switch mode hint */}
+                <p className="text-center text-xs text-muted-foreground pt-1">
+                  {isSignup ? "Already have an account?" : "Don't have an account?"}{" "}
+                  <button
+                    type="button"
+                    onClick={() => switchTab(isSignup ? "signin" : "signup")}
+                    className="text-orange-500 hover:text-orange-600 font-medium transition-colors"
+                  >
+                    {isSignup ? "Sign In" : "Sign Up"}
+                  </button>
+                </p>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

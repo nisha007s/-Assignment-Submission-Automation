@@ -125,6 +125,39 @@
   body {
     @apply bg-background text-foreground transition-colors duration-300;
   }
+
+  /* Smooth scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #F97316; border-radius: 9999px; }
+  ::-webkit-scrollbar-thumb:hover { background: #EA580C; }
+
+  /* Focus-visible for accessibility */
+  :focus-visible {
+    outline: 2px solid #F97316;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+/* ── Keyframe Animations ──────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin-slow {
+  to { transform: rotate(360deg); }
 }
 
 @layer utilities {
