@@ -1,22 +1,26 @@
 "use client";
 
-import { Home, Upload, Share2, Heart, Plus } from "lucide-react";
+import { Home, Upload, Search, Heart, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface FloatingMenuProps {
   onHomeClick?: () => void;
   onUploadClick?: () => void;
-  onShareClick?: () => void;
+  onShareClick?: () => void;    // kept for backwards compat
+  onSearchClick?: () => void;   // replaces Share in new dashboards
   onFavoriteClick?: () => void;
   onCenterClick?: () => void;
+  centerLabel?: string;
 }
 
 export function FloatingMenu({
   onHomeClick,
   onUploadClick,
   onShareClick,
+  onSearchClick,
   onFavoriteClick,
   onCenterClick,
+  centerLabel = "Upload Assignment",
 }: FloatingMenuProps) {
   const iconButtonClass = cn(
     "relative flex items-center justify-center",
@@ -95,13 +99,13 @@ export function FloatingMenu({
           <Plus className="relative w-7 h-7 text-white transition-transform duration-300 group-hover:rotate-90" />
         </button>
 
-        {/* Share button */}
+        {/* Search button (replaces Share) */}
         <button
-          onClick={onShareClick}
+          onClick={onSearchClick ?? onShareClick}
           className={iconButtonClass}
-          aria-label="Share"
+          aria-label="Search"
         >
-          <Share2 className={iconClass} />
+          <Search className={iconClass} />
         </button>
 
         {/* Favorite button */}
