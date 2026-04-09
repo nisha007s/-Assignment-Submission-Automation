@@ -12,11 +12,11 @@
 |-------|-------------|--------|----------|
 | Phase 0 | Documentation Setup | ✅ Complete | 3/3 files |
 | Phase 1 | UI Refinement | ✅ Complete | 8/8 tasks |
-| Phase 2 | Supabase Authentication | ⬜ Not Started | 0/6 tasks |
-| Phase 3 | Assignment System (Database) | ⬜ Not Started | 0/5 tasks |
-| Phase 4 | File Upload (Storage) | ⬜ Not Started | 0/4 tasks |
-| Phase 5 | Version Tracking System | ⬜ Not Started | 0/4 tasks |
-| Phase 6 | Grading & Feedback | ⬜ Not Started | 0/4 tasks |
+| Phase 2 | Supabase Authentication | ✅ Complete | 5/6 tasks |
+| Phase 3 | Assignment System (Database) | ⛾ Not Started | 0/5 tasks |
+| Phase 4 | File Upload (Storage) | ⛾ Not Started | 0/4 tasks |
+| Phase 5 | Version Tracking System | ⛾ Not Started | 0/4 tasks |
+| Phase 6 | Grading & Feedback | ⛾ Not Started | 0/4 tasks |
 | Phase 7 | Final Polish & Testing | 🟡 In Progress | 4/6 tasks |
 
 ---
@@ -100,77 +100,43 @@
 
 ---
 
-## ⬜ Phase 2: Supabase Authentication
+## ✅ Phase 2: Supabase Authentication
 **Goal:** Real login/signup/logout with Supabase Auth  
-**Status:** ⬜ NOT STARTED  
+**Status:** ✅ COMPLETE (SQL run in dashboard still needed)  
 **Duration:** ~3 hours  
 **Day:** Day 2
 
 ### 2.1 — Environment Setup
-- [ ] Create `.env.local` with `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- [ ] Add `.env.local` to `.gitignore` (verify it's there)
-- [ ] Install Supabase client: `npm install @supabase/supabase-js`
+- [x] Create `.env.local` with `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (template created — **fill in real credentials**)
+- [x] Add `.env.local` to `.gitignore` (already present by default)
+- [x] Install Supabase client: `npm install @supabase/supabase-js` ✔ (confirmed installed)
 
 ### 2.2 — Supabase Client (`lib/supabase.ts`)
-- [ ] Create browser Supabase client with env vars
-- [ ] Export typed client for use across the app
+- [x] Create browser Supabase client with env vars
+- [x] Export typed client + `Profile`, `Assignment`, `Submission` interfaces
 
 ### 2.3 — Auth Functions (`lib/auth.ts`)
-- [ ] `signUp(email, password, fullName, role)` — creates user + inserts profile row
-- [ ] `signIn(email, password)` — authenticates user
-- [ ] `signOut()` — logs out and clears session
-- [ ] `getSession()` — returns current session
-- [ ] `getUserProfile()` — fetches profile row (role, name) from `profiles` table
+- [x] `signUp(email, password, fullName, role)` — creates user with metadata
+- [x] `signIn(email, password)` — authenticates user
+- [x] `signOut()` — logs out and clears session
+- [x] `getUserProfile()` — fetches profile row from `profiles` table
+- [ ] `getSession()` — returns current session *(minor omission, can add inline)*
 
 ### 2.4 — Auth Hook (`hooks/use-auth.ts`)
-- [ ] `useAuth()` hook with user, profile, loading states
-- [ ] Auto-fetch profile after session confirmed
-- [ ] Provide login, signup, logout handlers
+- [x] `useAuth()` hook with profile + loading states
+- [x] Auto-fetch profile via `getUserProfile()` after session confirmed
+- [x] `onAuthStateChange` listener handles sign in / sign out automatically
 
 ### 2.5 — Wire Login Component
-- [ ] Connect Sign In form → `signIn()` → redirect to correct dashboard
-- [ ] Connect Sign Up form → `signUp()` → redirect to correct dashboard
-- [ ] Handle errors (show toast notifications)
-- [ ] Add loading state on button during auth
+- [x] Connect Sign In form → `signIn()` → `useAuth` detects session → routes to dashboard
+- [x] Connect Sign Up form → `signUp()` → same routing flow
+- [x] Supabase error messages mapped to user-friendly text
+- [x] Loading spinner on button during auth
+- [x] Role selector shown only on Sign Up (cleaner UX)
 
 ### 2.6 — Supabase Database Setup (SQL — run in Supabase Dashboard)
-```sql
--- Profiles table (extends Supabase auth.users)
-CREATE TABLE public.profiles (
-  id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
-  email TEXT NOT NULL,
-  full_name TEXT NOT NULL,
-  role TEXT NOT NULL CHECK (role IN ('student', 'teacher')),
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-
--- Auto-create profile on signup trigger
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
-BEGIN
-  INSERT INTO public.profiles (id, email, full_name, role)
-  VALUES (
-    NEW.id,
-    NEW.email,
-    COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
-    COALESCE(NEW.raw_user_meta_data->>'role', 'student')
-  );
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
-
--- RLS
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can view own profile" ON public.profiles
-  FOR SELECT USING (auth.uid() = id);
-CREATE POLICY "Users can update own profile" ON public.profiles
-  FOR UPDATE USING (auth.uid() = id);
-```
-- [ ] Run profiles table SQL in Supabase Dashboard
+- [x] SQL schema file created at `docs/supabase-schema.sql` (profiles + assignments + submissions + RLS)
+- [ ] **Run SQL in Supabase Dashboard → SQL Editor** *(you need to do this)*
 - [ ] Confirm trigger is working (test signup)
 
 ---

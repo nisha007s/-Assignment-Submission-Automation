@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { signIn, signUp } from "@/lib/auth";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,11 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ThemeToggle } from "@/components/theme-toggle";
 import { BookOpen, Loader2, AlertCircle } from "lucide-react";
 
-interface LoginProps {
-  onLogin: (role: "student" | "teacher", email: string) => void;
-}
-
-export function Login({ onLogin }: LoginProps) {
+// No props needed — routing handled by useAuth in page.tsx
+export function Login() {
   const [tab, setTab] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,18 +28,35 @@ export function Login({ onLogin }: LoginProps) {
 
     if (!email || !password) { setError("Please fill in all required fields."); return; }
     if (isSignup && !name.trim()) { setError("Please enter your full name."); return; }
+    if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
 
     setLoading(true);
-    // Simulate brief async (replaced by real auth in Phase 2)
-    await new Promise(r => setTimeout(r, 600));
-    setLoading(false);
-    onLogin(role, email);
+    try {
+      if (isSignup) {
+        await signUp(email, password, name.trim(), role);
+        toast.success("Account created! Welcome aboard 🎉", {
+          description: `Signing you in as ${role}...`,
+        });
+      } else {
+        await signIn(email, password);
+        toast.success("Welcome back!", {
+          description: "Redirecting to your dashboard...",
+        });
+      }
+      // useAuth onAuthStateChange will handle routing automatically
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Something went wrong.";
+      // Map Supabase error messages to user-friendly text
+      if (msg.includes("Invalid login credentials")) setError("Incorrect email or password.");
+      else if (msg.includes("User already registered")) setError("An account with this email already exists.");
+      else if (msg.includes("Password should be")) setError("Password must be at least 6 characters.");
+      else setError(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const switchTab = (t: "signin" | "signup") => {
-    setTab(t);
-    setError("");
-  };
+  const switchTab = (t: "signin" | "signup") => { setTab(t); setError(""); };
 
   return (
     <div className="flex min-h-screen flex-col bg-muted dark:bg-background">
@@ -49,7 +65,6 @@ export function Login({ onLogin }: LoginProps) {
       </header>
 
       <div className="flex flex-1 items-center justify-center p-4">
-        {/* Entrance animation */}
         <div className="w-full max-w-md" style={{ animation: "slideUp 0.4s ease both" }}>
           <Card className="rounded-2xl border border-border bg-card shadow-lg dark:shadow-2xl transition-shadow duration-300">
             {/* Logo + title */}
@@ -64,7 +79,7 @@ export function Login({ onLogin }: LoginProps) {
             </CardHeader>
 
             <CardContent className="pt-2">
-              {/* Sign In / Sign Up Tab Toggle */}
+              {/* Sign In / Sign Up tabs */}
               <div className="flex rounded-xl bg-muted dark:bg-secondary p-1 mb-5">
                 {(["signin", "signup"] as const).map((t) => (
                   <button
@@ -83,7 +98,7 @@ export function Login({ onLogin }: LoginProps) {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-3">
-                {/* Full Name — only in Sign Up mode */}
+                {/* Full Name — signup only */}
                 {isSignup && (
                   <div className="space-y-1.5" style={{ animation: "fadeIn 0.25s ease both" }}>
                     <label htmlFor="name" className="text-sm font-medium text-foreground">Full Name</label>
@@ -118,7 +133,7 @@ export function Login({ onLogin }: LoginProps) {
                   <Input
                     id="password"
                     type="password"
-                    placeholder="Enter your password"
+                    placeholder="Enter your password (min 6 chars)"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="h-11 rounded-xl bg-secondary border-border transition-all duration-200 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500"
@@ -126,19 +141,21 @@ export function Login({ onLogin }: LoginProps) {
                   />
                 </div>
 
-                {/* Role */}
-                <div className="space-y-1.5">
-                  <label htmlFor="role" className="text-sm font-medium text-foreground">Role</label>
-                  <Select value={role} onValueChange={(v) => setRole(v as "student" | "teacher")}>
-                    <SelectTrigger id="role" className="h-11 rounded-xl bg-secondary border-border">
-                      <SelectValue placeholder="Select your role" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl bg-card border-border">
-                      <SelectItem value="student">Student</SelectItem>
-                      <SelectItem value="teacher">Teacher</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                {/* Role — signup only */}
+                {isSignup && (
+                  <div className="space-y-1.5" style={{ animation: "fadeIn 0.25s ease both" }}>
+                    <label htmlFor="role" className="text-sm font-medium text-foreground">Role</label>
+                    <Select value={role} onValueChange={(v) => setRole(v as "student" | "teacher")}>
+                      <SelectTrigger id="role" className="h-11 rounded-xl bg-secondary border-border">
+                        <SelectValue placeholder="Select your role" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl bg-card border-border">
+                        <SelectItem value="student">Student</SelectItem>
+                        <SelectItem value="teacher">Teacher</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 {/* Error message */}
                 {error && (
@@ -148,7 +165,7 @@ export function Login({ onLogin }: LoginProps) {
                   </div>
                 )}
 
-                {/* Submit button with loading state */}
+                {/* Submit */}
                 <Button
                   type="submit"
                   disabled={loading}

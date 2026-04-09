@@ -1,34 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useAuth } from "@/hooks/use-auth";
+import { signOut } from "@/lib/auth";
 import { Login } from "@/components/login";
 import { StudentDashboard } from "@/components/student-dashboard";
 import { TeacherDashboard } from "@/components/teacher-dashboard";
 
-type UserRole = "student" | "teacher" | null;
-
 export default function Home() {
-  const [userRole, setUserRole] = useState<UserRole>(null);
-  const [userName, setUserName] = useState("");
+  const { profile, loading } = useAuth();
 
-  const handleLogin = (role: "student" | "teacher", email: string) => {
-    setUserRole(role);
-    // Extract name from email for display
-    const name = email.split("@")[0].replace(/[._]/g, " ");
-    setUserName(name.charAt(0).toUpperCase() + name.slice(1));
-  };
-
-  const handleLogout = () => {
-    setUserRole(null);
-    setUserName("");
-  };
-
-  if (!userRole) {
-    return <Login onLogin={handleLogin} />;
+  // Loading — check session
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-muted dark:bg-background">
+        <div className="h-9 w-9 animate-spin rounded-full border-4 border-orange-500 border-t-transparent" />
+      </div>
+    );
   }
 
-  if (userRole === "student") {
-    return <StudentDashboard userName={userName} onLogout={handleLogout} />;
+  // Not logged in — show login page
+  if (!profile) return <Login />;
+
+  // Logged in — route by role
+  const handleLogout = async () => { await signOut(); };
+
+  if (profile.role === "student") {
+    return <StudentDashboard userName={profile.full_name} onLogout={handleLogout} />;
   }
 
   return <TeacherDashboard onLogout={handleLogout} />;
