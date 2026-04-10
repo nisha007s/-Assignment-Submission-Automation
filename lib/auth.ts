@@ -1,21 +1,42 @@
 import { supabase } from "./supabase";
 import type { Profile, Role } from "./supabase";
 
-export async function signUp(email: string, password: string, fullName: string, role: Role) {
+export async function signUp(
+  email: string,
+  password: string,
+  fullName: string,
+  role: Role
+) {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: { data: { full_name: fullName, role } },
   });
+
   if (error) throw error;
 
-  // Fallback profile upsert in case DB trigger is missing or not applied yet.
+  // ✅ INSERT PROFILE AFTER SIGNUP
   if (data.user) {
-    await ensureUserProfile(data.user.id, email, fullName, role);
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .insert([
+        {
+          id: data.user.id,
+          email: email,
+          full_name: fullName,
+          role: role,
+        },
+      ]);
+
+    if (profileError) {
+      console.error("Profile insert failed:", profileError);
+      throw profileError;
+    }
   }
 
   return data;
 }
+ 
 
 export async function signIn(email: string, password: string) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
