@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { signIn, signUp } from "@/lib/auth";
+import { signIn, signUp, getUserProfileWithRetry } from "@/lib/auth";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,7 @@ import { BookOpen, Loader2, AlertCircle } from "lucide-react";
 
 // No props needed — routing handled by useAuth in page.tsx
 export function Login() {
+  const router = useRouter();
   const [tab, setTab] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -33,17 +35,29 @@ export function Login() {
     setLoading(true);
     try {
       if (isSignup) {
-        await signUp(email, password, name.trim(), role);
+        const signUpData = await signUp(email, password, name.trim(), role);
+        console.log("[login] signUp success", signUpData);
         toast.success("Account created! Welcome aboard 🎉", {
           description: `Signing you in as ${role}...`,
         });
       } else {
-        await signIn(email, password);
+        const signInData = await signIn(email, password);
+        console.log("[login] signIn success", signInData);
         toast.success("Welcome back!", {
           description: "Redirecting to your dashboard...",
         });
       }
-      // useAuth onAuthStateChange will handle routing automatically
+
+      const profile = await getUserProfileWithRetry();
+      console.log("[login] profile after auth", profile);
+
+      if (profile?.role === "student") {
+        router.replace("/student-dashboard");
+      } else if (profile?.role === "teacher") {
+        router.replace("/teacher-dashboard");
+      } else {
+        setError("Your profile could not be loaded. Check Supabase profiles table and RLS policies.");
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Something went wrong.";
       // Map Supabase error messages to user-friendly text

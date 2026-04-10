@@ -1,13 +1,32 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
-import { signOut } from "@/lib/auth";
 import { Login } from "@/components/login";
-import { StudentDashboard } from "@/components/student-dashboard";
-import { TeacherDashboard } from "@/components/teacher-dashboard";
 
 export default function Home() {
-  const { profile, loading } = useAuth();
+  const router = useRouter();
+  const { session, profile, loading } = useAuth();
+
+  useEffect(() => {
+    if (loading) return;
+    if (!session) return;
+
+    if (profile?.role === "student") {
+      console.log("[home] redirecting student to /student-dashboard");
+      router.replace("/student-dashboard");
+      return;
+    }
+
+    if (profile?.role === "teacher") {
+      console.log("[home] redirecting teacher to /teacher-dashboard");
+      router.replace("/teacher-dashboard");
+      return;
+    }
+
+    console.warn("[home] session exists but profile is missing");
+  }, [loading, session, profile, router]);
 
   // Loading — check session
   if (loading) {
@@ -18,15 +37,22 @@ export default function Home() {
     );
   }
 
-  // Not logged in — show login page
-  if (!profile) return <Login />;
+  // Not logged in
+  if (!session) return <Login />;
 
-  // Logged in — route by role
-  const handleLogout = async () => { await signOut(); };
-
-  if (profile.role === "student") {
-    return <StudentDashboard userName={profile.full_name} onLogout={handleLogout} />;
+  // Logged in but profile not available
+  if (!profile) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-muted dark:bg-background p-6 text-center">
+        <div>
+          <p className="text-foreground font-medium">Authenticated but profile not found.</p>
+          <p className="text-sm text-muted-foreground mt-2">
+            Check whether `profiles` table exists and contains a row for this user.
+          </p>
+        </div>
+      </div>
+    );
   }
 
-  return <TeacherDashboard onLogout={handleLogout} />;
+  return null;
 }

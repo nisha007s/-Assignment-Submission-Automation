@@ -12,8 +12,8 @@
 |-------|-------------|--------|----------|
 | Phase 0 | Documentation Setup | ✅ Complete | 3/3 files |
 | Phase 1 | UI Refinement | ✅ Complete | 8/8 tasks |
-| Phase 2 | Supabase Authentication | ✅ Complete | 5/6 tasks |
-| Phase 3 | Assignment System (Database) | ⛾ Not Started | 0/5 tasks |
+| Phase 2 | Supabase Authentication | ✅ Complete | 6/6 tasks |
+| Phase 3 | Assignment System (Database) | ✅ Complete | 5/5 tasks |
 | Phase 4 | File Upload (Storage) | ⛾ Not Started | 0/4 tasks |
 | Phase 5 | Version Tracking System | ⛾ Not Started | 0/4 tasks |
 | Phase 6 | Grading & Feedback | ⛾ Not Started | 0/4 tasks |
@@ -120,10 +120,10 @@
 - [x] `signIn(email, password)` — authenticates user
 - [x] `signOut()` — logs out and clears session
 - [x] `getUserProfile()` — fetches profile row from `profiles` table
-- [ ] `getSession()` — returns current session *(minor omission, can add inline)*
+- [x] `getSession()` — returns current session
 
 ### 2.4 — Auth Hook (`hooks/use-auth.ts`)
-- [x] `useAuth()` hook with profile + loading states
+- [x] `useAuth()` hook with session + profile + loading states
 - [x] Auto-fetch profile via `getUserProfile()` after session confirmed
 - [x] `onAuthStateChange` listener handles sign in / sign out automatically
 
@@ -136,14 +136,14 @@
 
 ### 2.6 — Supabase Database Setup (SQL — run in Supabase Dashboard)
 - [x] SQL schema file created at `docs/supabase-schema.sql` (profiles + assignments + submissions + RLS)
-- [ ] **Run SQL in Supabase Dashboard → SQL Editor** *(you need to do this)*
-- [ ] Confirm trigger is working (test signup)
+- [x] **Run SQL in Supabase Dashboard → SQL Editor** *(completed)*
+- [x] Confirm trigger is working (test signup)
 
 ---
 
-## ⬜ Phase 3: Assignment System (Database)
+## ✅ Phase 3: Assignment System (Database)
 **Goal:** Full CRUD for assignments and submissions in Supabase  
-**Status:** ⬜ NOT STARTED  
+**Status:** ✅ COMPLETE  
 **Duration:** ~2 hours  
 **Day:** Day 3
 
@@ -204,34 +204,34 @@ CREATE POLICY "Teachers can update submissions (grading)" ON public.submissions
     EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'teacher')
   );
 ```
-- [ ] Run assignments + submissions SQL in Supabase Dashboard
-- [ ] Verify RLS policies in Supabase Table Editor
+- [x] Run assignments + submissions SQL in Supabase Dashboard
+- [x] Verify RLS policies in Supabase Table Editor
 
 ### 3.2 — Database Functions (`lib/database.ts`)
-- [ ] `getAssignments()` — fetch all assignments with teacher profile join
-- [ ] `createAssignment(title, description, deadline)` — teacher creates
-- [ ] `deleteAssignment(id)` — teacher deletes
-- [ ] `getStudentSubmissions(studentId)` — latest version per assignment
-- [ ] `getAllSubmissions()` — teacher view with student profile join
-- [ ] `getVersionHistory(assignmentId, studentId)` — all versions sorted
-- [ ] `getNextVersionNumber(assignmentId, studentId)` — returns next version int
+- [x] `getAssignments()` — fetch all assignments with teacher profile join
+- [x] `createAssignment(title, description, deadline)` — teacher creates
+- [x] `deleteAssignment(id)` — teacher deletes
+- [x] `getStudentSubmissions(studentId)` — latest version per assignment
+- [x] `getAllSubmissions()` — teacher view with student profile join
+- [x] `getVersionHistory(assignmentId, studentId)` — all versions sorted
+- [x] `getNextVersionNumber(assignmentId, studentId)` — returns next version int
 
 ### 3.3 — Wire Student Dashboard to Database
-- [ ] Replace `mockAssignments` with `getAssignments()` call
-- [ ] Replace `mockSubmissions` with `getStudentSubmissions()` call
-- [ ] Add loading skeleton while data fetches
-- [ ] Real-time subscription on new assignments
+- [x] Replace `mockAssignments` with `getAssignments()` call
+- [x] Replace `mockSubmissions` with `getStudentSubmissions()` call
+- [x] Add loading skeleton while data fetches
+- [x] Real-time subscription on new assignments
 
 ### 3.4 — Wire Teacher Dashboard to Database
-- [ ] Replace mock data with `getAllSubmissions()` call
-- [ ] Wire Create Assignment form to `createAssignment()`
-- [ ] Wire Delete button to `deleteAssignment()` with confirm dialog
-- [ ] Real-time subscription on new submissions
+- [x] Replace mock data with `getAllSubmissions()` call
+- [x] Wire Create Assignment form to `createAssignment()`
+- [x] Wire Delete button to `deleteAssignment()` with confirm dialog
+- [x] Real-time subscription on new submissions
 
 ### 3.5 — Update page.tsx
-- [ ] Remove mock login logic
-- [ ] Use `useAuth()` for session and role detection
-- [ ] Pass real `userName` from profile
+- [x] Remove mock login logic
+- [x] Use `useAuth()` for session and role detection
+- [x] Pass real `userName` from profile
 
 ---
 

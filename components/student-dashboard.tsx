@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +16,8 @@ import {
 import { UploadModal } from "@/components/upload-modal";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { FloatingMenu } from "@/components/floating-menu";
+import { supabase } from "@/lib/supabase";
+import { getAssignments, getStudentSubmissions, type AssignmentRecord } from "@/lib/database";
 import {
   Upload, LogOut, Calendar, FileText,
   Search, ClipboardList, CheckCircle, Clock, Eye,
@@ -26,32 +28,13 @@ interface StudentDashboardProps {
   onLogout: () => void;
 }
 
-// ── Mock data (unchanged) ───────────────────────────────────────────────────
-const mockAssignments = [
-  {
-    id: 1,
-    title: "Database Design Project",
-    description: "Design and implement a relational database schema for an e-commerce application.",
-    deadline: "2026-04-15",
-  },
-  {
-    id: 2,
-    title: "Algorithm Analysis Report",
-    description: "Analyze the time complexity of sorting algorithms and provide benchmarks.",
-    deadline: "2026-04-20",
-  },
-  {
-    id: 3,
-    title: "Web Development Portfolio",
-    description: "Create a personal portfolio website using modern web technologies.",
-    deadline: "2026-04-25",
-  },
-];
-
-const mockSubmissions = [
-  { id: 1, assignmentName: "Database Design Project", version: "v2", uploadDate: "2026-04-08", status: "submitted" },
-  { id: 2, assignmentName: "Algorithm Analysis Report", version: "v1", uploadDate: "2026-04-05", status: "under review" },
-];
+interface StudentSubmissionView {
+  id: string;
+  assignmentName: string;
+  version: string;
+  uploadDate: string;
+  status: string;
+}
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 function getDeadlineInfo(deadline: string) {
@@ -63,10 +46,60 @@ function getDeadlineInfo(deadline: string) {
 }
 
 export function StudentDashboard({ userName, onLogout }: StudentDashboardProps) {
+  const [assignments, setAssignments] = useState<AssignmentRecord[]>([]);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState<string>("");
-  const [submissions, setSubmissions] = useState(mockSubmissions);
+  const [submissions, setSubmissions] = useState<StudentSubmissionView[]>([]);
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const [assignmentRows, submissionRows] = await Promise.all([
+        getAssignments(),
+        getStudentSubmissions(),
+      ]);
+      setAssignments(assignmentRows);
+      setSubmissions(
+        submissionRows.map((row) => ({
+          id: row.id,
+          assignmentName: row.assignment_title,
+          version: `v${row.version}`,
+          uploadDate: row.created_at.split("T")[0],
+          status: row.status.replace("_", " "),
+        }))
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to load dashboard data";
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadData();
+  }, []);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("student-assignments-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "assignments" },
+        () => {
+          void loadData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, []);
 
   // ── Existing handlers (unchanged) ────────────────────────────────────────
   const handleUploadClick = (assignmentTitle: string) => {
@@ -80,7 +113,7 @@ export function StudentDashboard({ userName, onLogout }: StudentDashboardProps) 
       ? `v${parseInt(existingSubmission.version.slice(1)) + 1}`
       : "v1";
     const newSubmission = {
-      id: submissions.length + 1,
+      id: String(Date.now()),
       assignmentName: selectedAssignment,
       version: newVersion,
       uploadDate: new Date().toISOString().split("T")[0],
@@ -113,18 +146,18 @@ export function StudentDashboard({ userName, onLogout }: StudentDashboardProps) 
 
   // ── Derived stats ────────────────────────────────────────────────────────
   const stats = useMemo(() => ({
-    total:       mockAssignments.length,
+    total:       assignments.length,
     submitted:   submissions.filter((s) => s.status === "submitted").length,
-    pending:     mockAssignments.length - submissions.length,
+    pending:     assignments.length - submissions.length,
     underReview: submissions.filter((s) => s.status === "under review").length,
-  }), [submissions]);
+  }), [assignments.length, submissions]);
 
   // ── Filtered assignments ─────────────────────────────────────────────────
   const filteredAssignments = useMemo(() =>
-    mockAssignments.filter((a) =>
+    assignments.filter((a) =>
       a.title.toLowerCase().includes(search.toLowerCase()) ||
-      a.description.toLowerCase().includes(search.toLowerCase())
-    ), [search]);
+      (a.description ?? "").toLowerCase().includes(search.toLowerCase())
+    ), [assignments, search]);
 
   const statCards = [
     { label: "Total",       value: stats.total,       icon: ClipboardList, color: "text-orange-500" },
@@ -132,6 +165,14 @@ export function StudentDashboard({ userName, onLogout }: StudentDashboardProps) 
     { label: "Pending",     value: stats.pending,     icon: Clock,         color: "text-amber-500" },
     { label: "Under Review",value: stats.underReview, icon: Eye,           color: "text-blue-500" },
   ];
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-muted dark:bg-background">
+        <div className="h-9 w-9 animate-spin rounded-full border-4 border-orange-500 border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-muted dark:bg-background transition-colors duration-300">
@@ -161,6 +202,14 @@ export function StudentDashboard({ userName, onLogout }: StudentDashboardProps) 
 
       <main className="container mx-auto px-4 py-8 pb-28">
         <div className="grid gap-8">
+          {error && (
+            <Card className="rounded-2xl border border-red-200 bg-red-50 dark:bg-red-500/10 dark:border-red-500/30">
+              <CardContent className="p-4 flex items-center justify-between gap-4">
+                <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
+                <Button variant="outline" size="sm" onClick={() => void loadData()}>Retry</Button>
+              </CardContent>
+            </Card>
+          )}
 
           {/* ── NEW: Stats Cards ────────────────────────────────────────── */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -222,7 +271,7 @@ export function StudentDashboard({ userName, onLogout }: StudentDashboardProps) 
                         {assignment.title}
                       </CardTitle>
                       <CardDescription className="line-clamp-2 text-sm text-muted-foreground">
-                        {assignment.description}
+                        {assignment.description ?? "No description"}
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -308,8 +357,18 @@ export function StudentDashboard({ userName, onLogout }: StudentDashboardProps) 
 
       <FloatingMenu
         onHomeClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-        onUploadClick={() => { setSelectedAssignment(mockAssignments[0].title); setUploadModalOpen(true); }}
-        onCenterClick={() => { setSelectedAssignment(mockAssignments[0].title); setUploadModalOpen(true); }}
+        onUploadClick={() => {
+          if (assignments.length > 0) {
+            setSelectedAssignment(assignments[0].title);
+            setUploadModalOpen(true);
+          }
+        }}
+        onCenterClick={() => {
+          if (assignments.length > 0) {
+            setSelectedAssignment(assignments[0].title);
+            setUploadModalOpen(true);
+          }
+        }}
         onSearchClick={() => document.querySelector<HTMLInputElement>("input[placeholder*='Search']")?.focus()}
         centerLabel="Upload Assignment"
       />

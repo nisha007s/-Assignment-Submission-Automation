@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,6 +12,15 @@ import {
 import { FieldGroup, Field, FieldLabel } from "@/components/ui/field";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { FloatingMenu } from "@/components/floating-menu";
+import { supabase } from "@/lib/supabase";
+import {
+  getAssignments,
+  createAssignment,
+  deleteAssignment,
+  getAllSubmissions,
+  type AssignmentRecord,
+  type TeacherSubmissionRecord,
+} from "@/lib/database";
 import {
   LogOut, Download, Plus, GraduationCap, Calendar, FileText,
   Trash2, X, History, ClipboardList, CheckCircle, Clock,
@@ -21,21 +30,14 @@ interface TeacherDashboardProps {
   onLogout: () => void;
 }
 
-interface Assignment {
-  id: number;
-  title: string;
-  description: string;
-  deadline: string;
+interface SubmissionView {
+  id: string;
+  studentName: string;
+  assignmentName: string;
+  latestVersion: string;
+  submissionDate: string;
+  status: string;
 }
-
-// ── Mock data (status added for stats — no logic changes) ────────────────────
-const mockStudentSubmissions = [
-  { id: 1, studentName: "Alice Johnson",   assignmentName: "Database Design Project",  latestVersion: "v2", submissionDate: "2026-04-08", status: "graded" },
-  { id: 2, studentName: "Bob Smith",       assignmentName: "Algorithm Analysis Report", latestVersion: "v1", submissionDate: "2026-04-07", status: "submitted" },
-  { id: 3, studentName: "Carol Williams",  assignmentName: "Database Design Project",  latestVersion: "v3", submissionDate: "2026-04-08", status: "submitted" },
-  { id: 4, studentName: "David Brown",     assignmentName: "Web Development Portfolio", latestVersion: "v1", submissionDate: "2026-04-06", status: "under_review" },
-  { id: 5, studentName: "Emma Davis",      assignmentName: "Algorithm Analysis Report", latestVersion: "v2", submissionDate: "2026-04-08", status: "submitted" },
-];
 
 // Dummy version history for the history panel (UI only)
 const dummyVersionHistory = [
@@ -49,28 +51,90 @@ function isExpired(deadline: string) {
   return new Date(deadline) < new Date();
 }
 
-type Submission = typeof mockStudentSubmissions[0];
+type Submission = SubmissionView;
 
 export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
-  const [assignments, setAssignments] = useState<Assignment[]>([
-    { id: 1, title: "Database Design Project",  description: "Design and implement a relational database schema.", deadline: "2026-04-15" },
-    { id: 2, title: "Algorithm Analysis Report", description: "Analyze the time complexity of sorting algorithms.", deadline: "2026-04-20" },
-  ]);
+  const [assignments, setAssignments] = useState<AssignmentRecord[]>([]);
+  const [submissions, setSubmissions] = useState<SubmissionView[]>([]);
 
   const [newAssignment, setNewAssignment] = useState({ title: "", description: "", deadline: "" });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [formLoading, setFormLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // ── NEW UI state ─────────────────────────────────────────────────────────
-  const [deleteTarget,  setDeleteTarget]  = useState<Assignment | null>(null);
+  const [deleteTarget,  setDeleteTarget]  = useState<AssignmentRecord | null>(null);
   const [gradeTarget,   setGradeTarget]   = useState<Submission | null>(null);
   const [historyTarget, setHistoryTarget] = useState<Submission | null>(null);
   const [gradeScore,    setGradeScore]    = useState("");
 
-  // ── Existing handlers (UNCHANGED) ────────────────────────────────────────
-  const handleCreateAssignment = (e: React.FormEvent) => {
+  const mapTeacherSubmissions = (rows: TeacherSubmissionRecord[]): SubmissionView[] =>
+    rows.map((row) => ({
+      id: row.id,
+      studentName: row.student_name,
+      assignmentName: row.assignment_title,
+      latestVersion: `v${row.version}`,
+      submissionDate: row.created_at.split("T")[0],
+      status: row.status,
+    }));
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const [assignmentRows, submissionRows] = await Promise.all([
+        getAssignments(),
+        getAllSubmissions(),
+      ]);
+      setAssignments(assignmentRows);
+      setSubmissions(mapTeacherSubmissions(submissionRows));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to load teacher dashboard data";
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadData();
+  }, []);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("teacher-submissions-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "submissions" },
+        () => {
+          void loadData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const handleCreateAssignment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newAssignment.title && newAssignment.description && newAssignment.deadline) {
-      const assignment: Assignment = { id: assignments.length + 1, ...newAssignment };
-      setAssignments((prev) => [...prev, assignment]);
+      try {
+        setFormLoading(true);
+        const created = await createAssignment(
+          newAssignment.title,
+          newAssignment.description,
+          newAssignment.deadline
+        );
+        setAssignments((prev) => [created, ...prev]);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to create assignment";
+        setError(message);
+      } finally {
+        setFormLoading(false);
+      }
       setNewAssignment({ title: "", description: "", deadline: "" });
     }
   };
@@ -88,10 +152,10 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
   // ── Stats (derived, no logic change) ─────────────────────────────────────
   const stats = useMemo(() => ({
     assignments:  assignments.length,
-    total:        mockStudentSubmissions.length,
-    pending:      mockStudentSubmissions.filter((s) => s.status !== "graded").length,
-    graded:       mockStudentSubmissions.filter((s) => s.status === "graded").length,
-  }), [assignments]);
+    total:        submissions.length,
+    pending:      submissions.filter((s) => s.status !== "graded").length,
+    graded:       submissions.filter((s) => s.status === "graded").length,
+  }), [assignments.length, submissions]);
 
   const statCards = [
     { label: "Assignments",   value: stats.assignments, icon: ClipboardList,  color: "text-orange-500" },
@@ -107,6 +171,14 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
       default:             return <Badge className="bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400">Submitted</Badge>;
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-muted dark:bg-background">
+        <div className="h-9 w-9 animate-spin rounded-full border-4 border-orange-500 border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-muted dark:bg-background transition-colors duration-300">
@@ -132,6 +204,14 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
       </header>
 
       <main className="container mx-auto px-4 py-8 pb-28">
+        {error && (
+          <Card className="rounded-2xl border border-red-200 bg-red-50 dark:bg-red-500/10 dark:border-red-500/30 mb-6">
+            <CardContent className="p-4 flex items-center justify-between gap-4">
+              <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
+              <Button variant="outline" size="sm" onClick={() => void loadData()}>Retry</Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* ── NEW: Stats Cards ──────────────────────────────────────────── */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -186,7 +266,7 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                         onChange={(e) => setNewAssignment((prev) => ({ ...prev, deadline: e.target.value }))}
                         className="rounded-xl bg-secondary border-border transition-all duration-200 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500" required />
                     </Field>
-                    <Button type="submit" className="w-full rounded-xl gradient-button font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]">
+                    <Button type="submit" disabled={formLoading} className="w-full rounded-xl gradient-button font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]">
                       Create Assignment
                     </Button>
                   </FieldGroup>
@@ -266,7 +346,7 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {mockStudentSubmissions.map((submission) => (
+                    {submissions.map((submission) => (
                       <TableRow key={submission.id}
                         className="transition-colors duration-200 hover:bg-muted/30 dark:hover:bg-secondary/30 border-border">
                         <TableCell className="font-medium text-foreground">{submission.studentName}</TableCell>
@@ -338,9 +418,19 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                 Cancel
               </Button>
               <Button className="flex-1 rounded-xl bg-red-500 hover:bg-red-600 text-white"
-                onClick={() => {
-                  setAssignments((prev) => prev.filter((a) => a.id !== deleteTarget.id));
-                  setDeleteTarget(null);
+                disabled={deleteLoading}
+                onClick={async () => {
+                  try {
+                    setDeleteLoading(true);
+                    await deleteAssignment(deleteTarget.id);
+                    setAssignments((prev) => prev.filter((a) => a.id !== deleteTarget.id));
+                    setDeleteTarget(null);
+                  } catch (err) {
+                    const message = err instanceof Error ? err.message : "Failed to delete assignment";
+                    setError(message);
+                  } finally {
+                    setDeleteLoading(false);
+                  }
                 }}>
                 Delete
               </Button>
