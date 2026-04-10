@@ -1,15 +1,14 @@
 {
-  "name": "my-project",
+  "name": "assignment-submission-automation",
   "version": "0.1.0",
-  "packageManager": "pnpm@10.33.0"
   "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint ."
-  },
-  "dependencies": {
+ "scripts": {
+  "dev": "next dev",
+  "build": "next build",
+  "start": "next start",
+  "lint": "eslint ."
+},
+"dependencies": {
     "@hookform/resolvers": "^3.9.1",
     "@radix-ui/react-accordion": "1.2.12",
     "@radix-ui/react-alert-dialog": "1.1.15",
