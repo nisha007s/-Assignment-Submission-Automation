@@ -56,7 +56,8 @@ CREATE TABLE IF NOT EXISTS public.submissions (
     CHECK (status IN ('submitted', 'under_review', 'graded')),
   grade INTEGER CHECK (grade >= 0 AND grade <= 100),
   feedback TEXT,
-  created_at TIMESTAMPTZ DEFAULT now()
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ
 );
 
 -- 5. Row Level Security
@@ -88,8 +89,14 @@ CREATE POLICY "submissions_student_select" ON public.submissions FOR SELECT USIN
 CREATE POLICY "submissions_teacher_select" ON public.submissions FOR SELECT
   USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'teacher'));
 CREATE POLICY "submissions_insert" ON public.submissions FOR INSERT WITH CHECK (student_id = auth.uid());
+-- Teachers may update any submission row; WITH CHECK matches USING so updates (e.g. grading) are not rejected.
+DROP POLICY IF EXISTS "submissions_teacher_update" ON public.submissions;
 CREATE POLICY "submissions_teacher_update" ON public.submissions FOR UPDATE
-  USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'teacher'));
+  USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'teacher'))
+  WITH CHECK (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'teacher'));
 
 -- 6. Storage bucket (run separately or via Dashboard > Storage > New Bucket)
 -- Bucket name: submissions  |  Public: false
+
+-- 7. Migration: add updated_at to existing projects (safe if column already exists)
+ALTER TABLE public.submissions ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ;

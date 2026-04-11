@@ -14,6 +14,7 @@ import { FieldGroup, Field, FieldLabel } from "@/components/ui/field";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { FloatingMenu } from "@/components/floating-menu";
 import { VersionHistory } from "@/components/version-history";
+import { GradeModal } from "@/components/grade-modal";
 import { supabase } from "@/lib/supabase";
 import { resolveSubmissionDownloadUrlWithRetry } from "@/lib/storage";
 import {
@@ -44,6 +45,8 @@ interface SubmissionView {
   status: string;
   fileUrl: string | null;
   fileName: string | null;
+  grade: number | null;
+  feedback: string | null;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -67,7 +70,6 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
   const [deleteTarget,  setDeleteTarget]  = useState<AssignmentRecord | null>(null);
   const [gradeTarget,   setGradeTarget]   = useState<Submission | null>(null);
   const [historyTarget, setHistoryTarget] = useState<Submission | null>(null);
-  const [gradeScore,    setGradeScore]    = useState("");
   const [downloadBusyId, setDownloadBusyId] = useState<string | null>(null);
 
   const mapTeacherSubmissions = (rows: TeacherSubmissionRecord[]): SubmissionView[] =>
@@ -82,6 +84,8 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
       status: row.status,
       fileUrl: row.file_url,
       fileName: row.file_name,
+      grade: row.grade ?? null,
+      feedback: row.feedback ?? null,
     }));
 
   const loadData = async () => {
@@ -384,6 +388,7 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                       <TableHead className="font-semibold text-foreground">Assignment</TableHead>
                       <TableHead className="font-semibold text-foreground">Ver</TableHead>
                       <TableHead className="font-semibold text-foreground">Status</TableHead>
+                      <TableHead className="font-semibold text-foreground">Grade</TableHead>
                       <TableHead className="text-right font-semibold text-foreground">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -396,6 +401,11 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                         <TableCell>{getVersionBadge(submission.latestVersion)}</TableCell>
                         {/* NEW: Status badge */}
                         <TableCell>{getStatusBadge(submission.status)}</TableCell>
+                        <TableCell className="text-muted-foreground text-sm tabular-nums">
+                          {submission.status === "graded" && submission.grade != null
+                            ? `${submission.grade}/100`
+                            : "—"}
+                        </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
                             {/* Download (existing) */}
@@ -408,7 +418,7 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                             </Button>
                             {/* NEW: Grade button */}
                             <Button variant="ghost" size="sm"
-                              onClick={() => { setGradeTarget(submission); setGradeScore(""); }}
+                              onClick={() => setGradeTarget(submission)}
                               className="h-8 w-8 p-0 rounded-lg hover:bg-emerald-100 hover:text-emerald-600 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-400"
                               aria-label="Grade submission">
                               <GraduationCap className="h-3.5 w-3.5" />
@@ -483,50 +493,20 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
         </div>
       )}
 
-      {/* ── NEW: Grade Modal ──────────────────────────────────────────────── */}
-      {gradeTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setGradeTarget(null)} />
-          <div className="relative w-full max-w-sm rounded-2xl bg-card border border-border shadow-xl p-6"
-            style={{ animation: "slideUp 0.25s ease both" }}>
-            <button onClick={() => setGradeTarget(null)}
-              className="absolute top-4 right-4 p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-              <X className="h-4 w-4" />
-            </button>
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg shadow-orange-500/30 mb-4">
-              <GraduationCap className="h-6 w-6 text-white" />
-            </div>
-            <h3 className="text-lg font-semibold text-foreground mb-0.5">Grade Submission</h3>
-            <p className="text-sm text-muted-foreground mb-5">
-              {gradeTarget.studentName} · <span className="text-foreground">{gradeTarget.assignmentName}</span> ({gradeTarget.latestVersion})
-            </p>
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-foreground">Score (0 – 100)</label>
-                <Input
-                  type="number" min={0} max={100} placeholder="e.g. 85"
-                  value={gradeScore}
-                  onChange={(e) => setGradeScore(e.target.value)}
-                  className="rounded-xl bg-secondary border-border focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-foreground">Feedback <span className="text-muted-foreground font-normal">(optional)</span></label>
-                <Textarea rows={3} placeholder="Written feedback for the student..."
-                  className="rounded-xl resize-none bg-secondary border-border focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500" />
-              </div>
-            </div>
-            <div className="flex gap-3 mt-6">
-              <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setGradeTarget(null)}>Cancel</Button>
-              <Button className="flex-1 rounded-xl gradient-button font-semibold"
-                disabled={!gradeScore || Number(gradeScore) < 0 || Number(gradeScore) > 100}
-                onClick={() => setGradeTarget(null)}>
-                Submit Grade
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <GradeModal
+        open={!!gradeTarget}
+        onOpenChange={(o) => {
+          if (!o) setGradeTarget(null);
+        }}
+        submissionId={gradeTarget?.id ?? ""}
+        studentName={gradeTarget?.studentName ?? ""}
+        assignmentTitle={gradeTarget?.assignmentName ?? ""}
+        versionLabel={gradeTarget?.latestVersion ?? ""}
+        fileName={gradeTarget?.fileName ?? null}
+        initialGrade={gradeTarget?.grade ?? null}
+        initialFeedback={gradeTarget?.feedback ?? null}
+        onSubmitted={() => void loadData()}
+      />
 
       <VersionHistory
         open={!!historyTarget}

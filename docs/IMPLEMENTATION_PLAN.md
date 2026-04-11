@@ -297,33 +297,33 @@ CREATE POLICY "Teachers can update submissions (grading)" ON public.submissions
 
 ---
 
-## ⬜ Phase 6: Grading & Feedback System
+## ✅ Phase 6: Grading & Feedback System
 **Goal:** Teachers can grade submissions and students can see their grades  
-**Status:** ⬜ NOT STARTED  
+**Status:** ✅ COMPLETE  
 **Duration:** ~2 hours  
 **Day:** Day 4
 
 ### 6.1 — Grade Modal (`components/grade-modal.tsx`)
-- [ ] Dialog opens from "Grade" button in teacher dashboard
-- [ ] Shows student name, assignment name, latest version
-- [ ] Numeric score input: 0–100 with validation
-- [ ] Feedback textarea: optional written comments
-- [ ] If already graded: shows existing grade/feedback pre-filled
-- [ ] Submit → call `gradeSubmission(id, grade, feedback)`
+- [x] Dialog opens from "Grade" button in teacher dashboard
+- [x] Shows student name, assignment name, latest version (+ file name)
+- [x] Numeric score input: 0–100 with validation
+- [x] Feedback textarea: optional written comments
+- [x] If already graded: shows existing grade/feedback pre-filled
+- [x] Submit → call `gradeSubmission(id, grade, feedback)`
 
 ### 6.2 — Grade DB Function (`lib/database.ts`)
-- [ ] `gradeSubmission(submissionId, grade, feedback)` — updates row, sets status = 'graded'
-- [ ] `updateStatus(submissionId, status)` — teacher manually updates status
+- [x] `gradeSubmission(submissionId, grade, feedback)` — updates row, sets status = 'graded', `updated_at`
+- [x] `updateStatus(submissionId, status)` — teacher manually updates status
 
 ### 6.3 — Wire Teacher Dashboard
-- [ ] "Grade" button per submission row → open grade modal
-- [ ] After grading: row status badge updates to "Graded"
-- [ ] Grade score shown in submissions table
+- [x] "Grade" button per submission row → open grade modal
+- [x] After grading: row status badge updates to "Graded"
+- [x] Grade score shown in submissions table
 
 ### 6.4 — Wire Student Dashboard
-- [ ] Submissions table shows "Grade" column (hidden until graded)
-- [ ] Display: `85/100` with colored indicator (green ≥ 75, amber ≥ 50, red < 50)
-- [ ] Click grade badge → shows feedback in tooltip or small popover
+- [x] Submissions table shows "Grade" column (`—` until graded)
+- [x] Display: `85/100` with colored indicator (green ≥ 75, amber ≥ 50, red < 50)
+- [x] Click grade → shows feedback in popover
 
 ---
 
@@ -348,7 +348,7 @@ CREATE POLICY "Teachers can update submissions (grading)" ON public.submissions
 - [ ] Signup / sign-in failure *(inline errors; optional failure toast)*
 - [ ] Assignment created / deleted *(inline errors only; optional toasts)*
 - [x] File uploaded successfully (with version number) *(upload modal)*
-- [ ] Grade submitted
+- [x] Grade submitted
 - [ ] Session expired → redirect toast
 
 ### 7.4 — Accessibility

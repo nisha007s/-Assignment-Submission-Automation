@@ -13,6 +13,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import { UploadModal } from "@/components/upload-modal";
 import { VersionHistory } from "@/components/version-history";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -37,6 +43,8 @@ interface StudentSubmissionView {
   version: string;
   uploadDate: string;
   status: string;
+  grade: number | null;
+  feedback: string | null;
 }
 
 interface HistoryOpen {
@@ -51,6 +59,12 @@ function getDeadlineInfo(deadline: string) {
   if (days <= 2) return { label: `${days}d left`, cls: "text-red-500 font-medium" };
   if (days <= 5) return { label: `${days}d left`, cls: "text-amber-500 font-medium" };
   return { label: `${days}d left`, cls: "text-muted-foreground" };
+}
+
+function gradeScoreColorClass(score: number): string {
+  if (score >= 75) return "text-emerald-600 dark:text-emerald-400";
+  if (score >= 50) return "text-amber-600 dark:text-amber-500";
+  return "text-red-600 dark:text-red-400";
 }
 
 export function StudentDashboard({ userId, userName, onLogout }: StudentDashboardProps) {
@@ -81,6 +95,8 @@ export function StudentDashboard({ userId, userName, onLogout }: StudentDashboar
           version: `v${row.version}`,
           uploadDate: row.created_at.split("T")[0],
           status: row.status.replace("_", " "),
+          grade: row.grade ?? null,
+          feedback: row.feedback ?? null,
         }))
       );
     } catch (err) {
@@ -101,6 +117,23 @@ export function StudentDashboard({ userId, userName, onLogout }: StudentDashboar
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "assignments" },
+        () => {
+          void loadData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, []);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("student-submissions-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "submissions" },
         () => {
           void loadData();
         }
@@ -309,13 +342,14 @@ export function StudentDashboard({ userId, userName, onLogout }: StudentDashboar
                       <TableHead className="font-semibold text-foreground">Version</TableHead>
                       <TableHead className="font-semibold text-foreground">Upload Date</TableHead>
                       <TableHead className="font-semibold text-foreground">Status</TableHead>
+                      <TableHead className="font-semibold text-foreground">Grade</TableHead>
                       <TableHead className="text-right font-semibold text-foreground">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {submissions.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
+                        <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
                           <div className="flex flex-col items-center gap-2">
                             <FileText className="h-8 w-8 text-muted-foreground/50" />
                             <span>No submissions yet</span>
@@ -332,6 +366,36 @@ export function StudentDashboard({ userId, userName, onLogout }: StudentDashboar
                           <TableCell>{getVersionBadge(submission.version)}</TableCell>
                           <TableCell className="text-muted-foreground">{submission.uploadDate}</TableCell>
                           <TableCell>{getStatusBadge(submission.status)}</TableCell>
+                          <TableCell>
+                            {submission.status === "graded" && submission.grade != null ? (
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className={cn(
+                                      "h-8 px-2 font-semibold tabular-nums",
+                                      gradeScoreColorClass(submission.grade)
+                                    )}
+                                    aria-label={`Grade ${submission.grade} out of 100. Click for feedback.`}
+                                  >
+                                    {submission.grade}/100
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-80" align="start">
+                                  <p className="text-sm font-medium text-foreground mb-2">Instructor feedback</p>
+                                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                                    {submission.feedback?.trim()
+                                      ? submission.feedback
+                                      : "No written feedback."}
+                                  </p>
+                                </PopoverContent>
+                              </Popover>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
                           <TableCell className="text-right">
                             <Button
                               type="button"

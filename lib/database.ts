@@ -16,6 +16,8 @@ export interface StudentSubmissionRecord {
   version: number;
   status: "submitted" | "under_review" | "graded";
   created_at: string;
+  grade: number | null;
+  feedback: string | null;
 }
 
 export interface TeacherSubmissionRecord {
@@ -29,6 +31,8 @@ export interface TeacherSubmissionRecord {
   created_at: string;
   file_url: string | null;
   file_name: string | null;
+  grade: number | null;
+  feedback: string | null;
 }
 
 export interface SubmissionVersionRecord {
@@ -138,7 +142,7 @@ export async function getStudentSubmissions(): Promise<StudentSubmissionRecord[]
 
   const { data, error } = await supabase
     .from("submissions")
-    .select("id, assignment_id, version, status, created_at, assignments(title)")
+    .select("id, assignment_id, version, status, created_at, grade, feedback, assignments(title)")
     .eq("student_id", userData.user.id)
     .order("created_at", { ascending: false });
 
@@ -155,6 +159,8 @@ export async function getStudentSubmissions(): Promise<StudentSubmissionRecord[]
         version: row.version,
         status: row.status,
         created_at: row.created_at,
+        grade: row.grade ?? null,
+        feedback: row.feedback ?? null,
       });
     }
   });
@@ -168,7 +174,7 @@ export async function getAllSubmissions(): Promise<TeacherSubmissionRecord[]> {
   const { data, error } = await supabase
     .from("submissions")
     .select(
-      "id, assignment_id, student_id, version, status, created_at, file_url, file_name, assignments(title), profiles!submissions_student_id_fkey(full_name)"
+      "id, assignment_id, student_id, version, status, created_at, file_url, file_name, grade, feedback, assignments(title), profiles!submissions_student_id_fkey(full_name)"
     )
     .order("created_at", { ascending: false });
 
@@ -190,6 +196,8 @@ export async function getAllSubmissions(): Promise<TeacherSubmissionRecord[]> {
         created_at: row.created_at,
         file_url: row.file_url ?? null,
         file_name: row.file_name ?? null,
+        grade: row.grade ?? null,
+        feedback: row.feedback ?? null,
       });
     }
   });
@@ -197,6 +205,65 @@ export async function getAllSubmissions(): Promise<TeacherSubmissionRecord[]> {
   return Array.from(latestByStudentAssignment.values()).sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   );
+}
+
+function normalizeGrade(grade: number): number {
+  const n = Math.round(grade);
+  if (!Number.isFinite(n) || n < 0 || n > 100) {
+    throw new Error("Grade must be a whole number from 0 to 100");
+  }
+  return n;
+}
+
+/**
+ * Saves a numeric grade and optional feedback, marks the submission as graded.
+ * Does not set `updated_at` here so grading works even if that column was never migrated.
+ */
+export async function gradeSubmission(
+  submissionId: string,
+  grade: number,
+  feedback: string | null
+): Promise<void> {
+  const id = submissionId?.trim();
+  if (!id) throw new Error("Missing submission id");
+
+  const g = normalizeGrade(grade);
+
+  const { data, error } = await supabase
+    .from("submissions")
+    .update({
+      grade: g,
+      feedback,
+      status: "graded",
+    })
+    .eq("id", id)
+    .select("id");
+
+  if (error) throw error;
+  if (!data?.length) {
+    throw new Error(
+      "No submission was updated. Check that you are logged in as a teacher and Realtime/RLS allows updates."
+    );
+  }
+}
+
+export async function updateStatus(
+  submissionId: string,
+  status: "submitted" | "under_review" | "graded"
+): Promise<void> {
+  const id = submissionId?.trim();
+  if (!id) throw new Error("Missing submission id");
+
+  const { data, error } = await supabase
+    .from("submissions")
+    .update({ status })
+    .eq("id", id)
+    .select("id");
+
+  if (error) throw error;
+  if (!data?.length) {
+    throw new Error("No submission was updated.");
+  }
 }
 
 export async function getVersionHistory(
