@@ -51,7 +51,7 @@ export function UploadModal({
       e.target.value = "";
     }
   };
-  
+
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(true);
@@ -72,40 +72,47 @@ export function UploadModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-     // ✅ ADD THIS BLOCK HERE
-  const { data: userData } = await supabase.auth.getUser();
-  const user = userData?.user;
-
-  if (!user || !user.id) {
-    console.error("User not loaded yet");
-    alert("Please wait, user not ready");
-    return;
-  }
+    console.log("SUBMIT CLICKED");
   
     if (!selectedFile || uploading) return;
-
+  
     if (!ACCEPTED.test(selectedFile.name)) {
       toast.error("Invalid file type", {
         description: "Use PDF, DOC, DOCX, ZIP, PPT, or PPTX.",
       });
       return;
     }
+  
     if (selectedFile.size > MAX_BYTES) {
-      toast.error("File too large", { description: "Maximum size is 10 MB." });
+      toast.error("File too large", {
+        description: "Maximum size is 10 MB.",
+      });
       return;
     }
-
-    setUploading(true);
-    setUploadProgress(0);
+  
     try {
-      const { data: userData, error: userError } = await supabase.auth.getUser();
+      setUploading(true);
+      setUploadProgress(0);
+  
+      const { data: userData, error: userError } =
+        await supabase.auth.getUser();
+  
       if (userError) throw userError;
+  
       const user = userData.user;
       if (!user) throw new Error("Not signed in");
-
-      const version = await getNextVersionNumber(assignmentId, user.id);
-      const { path } = await uploadFile(selectedFile, user.id, (pct) => setUploadProgress(pct));
-
+  
+      const version = await getNextVersionNumber(
+        assignmentId,
+        user.id
+      );
+  
+      const { path } = await uploadFile(
+        selectedFile,
+        user.id,
+        (pct) => setUploadProgress(pct)
+      );
+  
       try {
         await createSubmission({
           assignment_id: assignmentId,
@@ -119,22 +126,27 @@ export function UploadModal({
         await deleteFile(path).catch(() => {});
         throw insertErr;
       }
-
+  
       toast.success("Submission uploaded", {
         description: `Version ${version} submitted for ${assignmentTitle}.`,
       });
+  
       setSelectedFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
+  
       onOpenChange(false);
       onSuccess?.();
+  
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Upload failed";
+      const message =
+        err instanceof Error ? err.message : "Upload failed";
       toast.error("Upload failed", { description: message });
     } finally {
       setUploading(false);
       setUploadProgress(0);
     }
   };
+   
 
   const clearFile = () => {
     setSelectedFile(null);
