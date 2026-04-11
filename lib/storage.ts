@@ -2,8 +2,11 @@
 
 import { supabase, supabaseUrl, supabaseAnonKey } from "./supabase";
 
-/** Supabase Storage bucket for assignment files. */
+/** Student submission files bucket. */
 export const ASSIGNMENTS_BUCKET = "submissions" as const;
+
+/** Teacher handout files (Create Assignment upload). Must exist in Supabase Storage. */
+export const ASSIGNMENT_HANDOUTS_BUCKET = "assignments" as const;
 
 const DEFAULT_SIGNED_URL_TTL = 3600;
 
@@ -42,22 +45,12 @@ async function getValidAccessToken(): Promise<string> {
   return session.access_token;
 }
 
-/**
- * Upload a file to the `submissions` bucket with XMLHttpRequest so upload progress is available.
- * Path: `{assignmentId}/{userId}/{version}/{timestamp}_{sanitizedName}` (matches Storage RLS in docs).
- */
-export async function uploadFile(
+async function xhrUploadToBucket(
+  bucket: string,
+  path: string,
   file: File,
-  context: UploadFileContext,
   onProgress?: (percent: number) => void
-): Promise<UploadFileResult> {
-  const { assignmentId, userId, version } = context;
-  if (!assignmentId?.trim()) throw new Error("Missing assignmentId for upload path");
-  if (!userId?.trim()) throw new Error("Missing userId for upload path");
-
-  const safeName = sanitizeFileName(file.name);
-  const path = `${assignmentId}/${userId}/v${version}-${Date.now()}-${safeName}`;
-
+): Promise<void> {
   const accessToken = await getValidAccessToken();
 
   if (!supabaseUrl || !supabaseAnonKey) {
@@ -68,9 +61,9 @@ export async function uploadFile(
   const baseUrl = supabaseUrl.replace(/\/$/, "");
   const anonKey = supabaseAnonKey;
   const encodedPath = path.split("/").map(encodeURIComponent).join("/");
-  const uploadUrl = `${baseUrl}/storage/v1/object/${ASSIGNMENTS_BUCKET}/${encodedPath}`;
+  const uploadUrl = `${baseUrl}/storage/v1/object/${bucket}/${encodedPath}`;
 
-  console.log("[storage] starting XHR upload", { bucket: ASSIGNMENTS_BUCKET, path, bytes: file.size });
+  console.log("[storage] starting XHR upload", { bucket, path, bytes: file.size });
 
   onProgress?.(0);
 
@@ -131,6 +124,25 @@ export async function uploadFile(
 
     xhr.send(file);
   });
+}
+
+/**
+ * Upload a file to the `submissions` bucket with XMLHttpRequest so upload progress is available.
+ * Path: `{assignmentId}/{userId}/{version}/{timestamp}_{sanitizedName}` (matches Storage RLS in docs).
+ */
+export async function uploadFile(
+  file: File,
+  context: UploadFileContext,
+  onProgress?: (percent: number) => void
+): Promise<UploadFileResult> {
+  const { assignmentId, userId, version } = context;
+  if (!assignmentId?.trim()) throw new Error("Missing assignmentId for upload path");
+  if (!userId?.trim()) throw new Error("Missing userId for upload path");
+
+  const safeName = sanitizeFileName(file.name);
+  const path = `${assignmentId}/${userId}/v${version}-${Date.now()}-${safeName}`;
+
+  await xhrUploadToBucket(ASSIGNMENTS_BUCKET, path, file, onProgress);
 
   const {
     data: { publicUrl },
@@ -138,6 +150,52 @@ export async function uploadFile(
 
   console.log("[storage] uploadFile resolved", { path });
   return { path, publicUrl: publicUrl ?? "" };
+}
+
+const HANDOUT_ACCEPT = /\.(pdf|doc|docx)$/i;
+
+/**
+ * Upload teacher handout to bucket `assignments` at `assignments/{teacherId}/{timestamp}_{name}`.
+ * Returns storage path (store in DB) and a public URL if the bucket is public.
+ */
+export async function uploadTeacherAssignmentFile(
+  file: File,
+  teacherId: string,
+  onProgress?: (percent: number) => void
+): Promise<{ path: string; publicUrl: string }> {
+  if (!teacherId?.trim()) throw new Error("Missing teacher id");
+  if (!HANDOUT_ACCEPT.test(file.name)) {
+    throw new Error("Invalid file type. Use PDF, DOC, or DOCX.");
+  }
+
+  const safeName = sanitizeFileName(file.name);
+  const path = `assignments/${teacherId}/${Date.now()}_${safeName}`;
+
+  await xhrUploadToBucket(ASSIGNMENT_HANDOUTS_BUCKET, path, file, onProgress);
+
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from(ASSIGNMENT_HANDOUTS_BUCKET).getPublicUrl(path);
+
+  return { path, publicUrl: publicUrl ?? "" };
+}
+
+/** Signed download URL for a stored handout path (private bucket) or pass-through for http(s). */
+export async function resolveAssignmentHandoutUrl(fileUrl: string): Promise<string> {
+  const trimmed = fileUrl.trim();
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  const { data, error } = await supabase.storage
+    .from(ASSIGNMENT_HANDOUTS_BUCKET)
+    .createSignedUrl(trimmed, DEFAULT_SIGNED_URL_TTL);
+
+  if (error) throw error;
+  if (!data?.signedUrl) throw new Error("Could not create signed URL for assignment file");
+  return data.signedUrl;
+}
+
+export async function deleteTeacherAssignmentFile(filePath: string): Promise<void> {
+  const { error } = await supabase.storage.from(ASSIGNMENT_HANDOUTS_BUCKET).remove([filePath]);
+  if (error) throw error;
 }
 
 /**

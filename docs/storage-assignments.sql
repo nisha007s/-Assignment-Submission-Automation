@@ -48,36 +48,33 @@ USING (
   )
 );
 
--- ── Bucket: assignments (legacy / optional) ────────────────
--- Path format: {auth.uid()}/{timestamp}_{filename}
+-- ── Bucket: assignments (teacher handouts for Create Assignment) ──
+-- Object key: assignments/{teacher_id}/{timestamp}_{filename}
+--   → segment [2] must equal auth.uid() for INSERT/DELETE
 
 DROP POLICY IF EXISTS "assignments_insert_own_folder" ON storage.objects;
 DROP POLICY IF EXISTS "assignments_select_own_or_teacher" ON storage.objects;
 DROP POLICY IF EXISTS "assignments_delete_own_folder" ON storage.objects;
+DROP POLICY IF EXISTS "assignments_teacher_insert_handout" ON storage.objects;
+DROP POLICY IF EXISTS "assignments_handout_select_authenticated" ON storage.objects;
+DROP POLICY IF EXISTS "assignments_teacher_delete_handout" ON storage.objects;
 
-CREATE POLICY "assignments_insert_own_folder"
+CREATE POLICY "assignments_teacher_insert_handout"
 ON storage.objects FOR INSERT TO authenticated
 WITH CHECK (
   bucket_id = 'assignments'
-  AND (storage.foldername(name))[1] = auth.uid()::text
+  AND EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'teacher')
+  AND (string_to_array(name, '/'))[2] = auth.uid()::text
 );
 
-CREATE POLICY "assignments_select_own_or_teacher"
+CREATE POLICY "assignments_handout_select_authenticated"
 ON storage.objects FOR SELECT TO authenticated
-USING (
-  bucket_id = 'assignments'
-  AND (
-    (storage.foldername(name))[1] = auth.uid()::text
-    OR EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role = 'teacher'
-    )
-  )
-);
+USING (bucket_id = 'assignments');
 
-CREATE POLICY "assignments_delete_own_folder"
+CREATE POLICY "assignments_teacher_delete_handout"
 ON storage.objects FOR DELETE TO authenticated
 USING (
   bucket_id = 'assignments'
-  AND (storage.foldername(name))[1] = auth.uid()::text
+  AND (string_to_array(name, '/'))[2] = auth.uid()::text
+  AND EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'teacher')
 );

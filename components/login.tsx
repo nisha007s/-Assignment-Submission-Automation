@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { BookOpen, Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 
 // No props needed — routing handled by useAuth in page.tsx
 export function Login() {
@@ -73,22 +73,39 @@ export function Login() {
   const switchTab = (t: "signin" | "signup") => { setTab(t); setError(""); };
 
   return (
-    <div className="flex min-h-screen flex-col bg-muted dark:bg-background">
-      <header className="absolute top-0 right-0 p-4 z-10">
-        <ThemeToggle />
+    <div
+      className="relative flex min-h-screen flex-col bg-muted dark:bg-background"
+      style={{
+        backgroundImage:
+          "linear-gradient(105deg, rgba(15,15,20,0.88) 0%, rgba(80,20,20,0.75) 100%), url(https://images.unsplash.com/photo-1562774053-701939374585?w=1920&q=80)",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundAttachment: "fixed",
+      }}
+    >
+      <header className="absolute top-0 right-0 z-10 p-4">
+        <ThemeToggle className="border-white/30 bg-black/20 text-white hover:bg-white/10 hover:text-white" />
       </header>
 
-      <div className="flex flex-1 items-center justify-center p-4">
+      <div className="relative z-[1] flex flex-1 items-center justify-center p-4 py-12">
         <div className="w-full max-w-md" style={{ animation: "slideUp 0.4s ease both" }}>
-          <Card className="rounded-2xl border border-border bg-card shadow-lg dark:shadow-2xl transition-shadow duration-300">
-            {/* Logo + title */}
+          <Card className="rounded-2xl border border-white/20 bg-card/95 shadow-2xl backdrop-blur-md dark:bg-card/90 dark:shadow-2xl transition-shadow duration-300">
             <CardHeader className="text-center pb-2">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg shadow-orange-500/30">
-                <BookOpen className="h-7 w-7 text-white" />
+              <div className="mx-auto mb-4 flex justify-center">
+                <img
+                  src="/iilm-logo.svg"
+                  alt="IILM University"
+                  width={120}
+                  height={120}
+                  className="h-24 w-24 rounded-2xl object-cover shadow-lg ring-2 ring-orange-500/20 sm:h-28 sm:w-28"
+                />
               </div>
-              <CardTitle className="text-2xl font-bold text-orange-500">Assignment Submission</CardTitle>
+              <p className="text-sm font-semibold uppercase tracking-wide text-red-600 dark:text-red-400">
+                IILM University
+              </p>
+              <CardTitle className="mt-1 text-2xl font-bold text-foreground">Assignment Submission</CardTitle>
               <CardDescription className="text-muted-foreground">
-                {isSignup ? "Create your account" : "Sign in to access your dashboard"}
+                {isSignup ? "Create your account" : "Sign in here to access your dashboard"}
               </CardDescription>
             </CardHeader>
 

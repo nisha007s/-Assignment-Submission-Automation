@@ -7,6 +7,8 @@ export interface AssignmentRecord {
   deadline: string;
   teacher_id: string;
   created_at: string;
+  /** Storage path or URL for teacher-uploaded handout (PDF/DOC/DOCX). Omitted if column not migrated yet. */
+  file_url?: string | null;
 }
 
 export interface StudentSubmissionRecord {
@@ -108,27 +110,38 @@ export async function getAssignments(): Promise<AssignmentRecord[]> {
   return (data ?? []) as AssignmentRecord[];
 }
 
-export async function createAssignment(title: string, description: string, deadline: string) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  
+export async function createAssignment(
+  title: string,
+  description: string,
+  deadline: string,
+  file_url?: string | null
+) {
+  const { data: { user } } = await supabase.auth.getUser();
+
   if (!user) throw new Error("Not authenticated");
 
   const { data, error } = await supabase
     .from("assignments")
-    .insert({
-      title,
-      description,
-      deadline,
-      teacher_id: user.id,
-    })
-    .select("*")
+    .insert([
+      {
+        title,
+        description,
+        deadline,
+        teacher_id: user?.id, // ✅ IMPORTANT
+        file_url
+      }
+    ])
+    .select()
     .single();
 
-  if (error) throw error;
-  return data as AssignmentRecord;
+  if (error) {
+    console.error("CREATE ASSIGNMENT ERROR:", error);
+    throw error;
+  }
+
+  return data;
 }
+   
 
 export async function deleteAssignment(assignmentId: string) {
   const { error } = await supabase.from("assignments").delete().eq("id", assignmentId);

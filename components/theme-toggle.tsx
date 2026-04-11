@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Moon, Sun } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-export function ThemeToggle() {
+export function ThemeToggle({ className }: { className?: string }) {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [mounted, setMounted] = useState(false);
 
@@ -32,7 +33,11 @@ export function ThemeToggle() {
 
   if (!mounted) {
     return (
-      <Button variant="ghost" size="icon" className="rounded-full w-9 h-9 bg-secondary border border-border">
+      <Button
+        variant="ghost"
+        size="icon"
+        className={cn("rounded-full w-9 h-9 bg-secondary border border-border", className)}
+      >
         <span className="sr-only">Toggle theme</span>
       </Button>
     );
@@ -43,7 +48,10 @@ export function ThemeToggle() {
       variant="ghost"
       size="icon"
       onClick={toggleTheme}
-      className="rounded-full w-9 h-9 bg-secondary border border-border transition-all duration-300 hover:bg-orange-500/10 hover:border-orange-500/50 hover:text-orange-500"
+      className={cn(
+        "rounded-full w-9 h-9 bg-secondary border border-border transition-all duration-300 hover:bg-orange-500/10 hover:border-orange-500/50 hover:text-orange-500",
+        className
+      )}
     >
       {theme === "light" ? (
         <Moon className="h-5 w-5 transition-transform duration-300" />

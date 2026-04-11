@@ -33,10 +33,13 @@ export default function TeacherDashboardPage() {
 
   if (!session || !profile || profile.role !== "teacher") return null;
 
-  return  <TeacherDashboard
-  onLogout={async () => {
-    await signOut();
-    router.push("/");
-  }}
-/>;
+  return (
+    <TeacherDashboard
+      userName={profile.full_name}
+      onLogout={async () => {
+        await signOut();
+        router.push("/");
+      }}
+    />
+  );
 }

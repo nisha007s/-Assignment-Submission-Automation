@@ -7,24 +7,11 @@ const _inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'Assignment Submission Automation',
-  description: 'Academic prototype for managing assignment submissions',
+  title: 'IILM University — Assignment Submission',
+  description: 'IILM University assignment submission and grading',
   generator: 'v0.app',
   icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
+    icon: [{ url: '/iilm-favicon.svg', type: 'image/svg+xml' }],
     apple: '/apple-icon.png',
   },
 }

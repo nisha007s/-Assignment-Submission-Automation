@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS public.assignments (
   description TEXT,
   deadline TIMESTAMPTZ NOT NULL,
   teacher_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  file_url TEXT,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -100,3 +101,6 @@ CREATE POLICY "submissions_teacher_update" ON public.submissions FOR UPDATE
 
 -- 7. Migration: add updated_at to existing projects (safe if column already exists)
 ALTER TABLE public.submissions ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ;
+
+-- 8. Teacher handout file path/URL on assignments (optional)
+ALTER TABLE public.assignments ADD COLUMN IF NOT EXISTS file_url TEXT;

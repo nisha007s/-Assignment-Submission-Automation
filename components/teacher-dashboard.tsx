@@ -1,22 +1,27 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { UniversityHeader } from "@/components/ui/university-header";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { FieldGroup, Field, FieldLabel } from "@/components/ui/field";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { FloatingMenu } from "@/components/floating-menu";
 import { VersionHistory } from "@/components/version-history";
 import { GradeModal } from "@/components/grade-modal";
 import { supabase } from "@/lib/supabase";
-import { resolveSubmissionDownloadUrlWithRetry } from "@/lib/storage";
+import {
+  resolveSubmissionDownloadUrlWithRetry,
+  uploadTeacherAssignmentFile,
+  deleteTeacherAssignmentFile,
+} from "@/lib/storage";
 import {
   getAssignments,
   createAssignment,
@@ -26,11 +31,14 @@ import {
   type TeacherSubmissionRecord,
 } from "@/lib/database";
 import {
-  LogOut, Download, Plus, GraduationCap, Calendar, FileText,
-  Trash2, X, History, ClipboardList, CheckCircle, Clock,
+  Download, Plus, GraduationCap, Calendar, FileText,
+  Trash2, X, History, ClipboardList, CheckCircle, Clock, Paperclip, Loader2,
 } from "lucide-react";
 
+const HANDOUT_ACCEPT = ".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
 interface TeacherDashboardProps {
+  userName: string;
   onLogout: () => void;
 }
 
@@ -56,11 +64,14 @@ function isExpired(deadline: string) {
 
 type Submission = SubmissionView;
 
-export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
+export function TeacherDashboard({ userName, onLogout }: TeacherDashboardProps) {
   const [assignments, setAssignments] = useState<AssignmentRecord[]>([]);
   const [submissions, setSubmissions] = useState<SubmissionView[]>([]);
 
   const [newAssignment, setNewAssignment] = useState({ title: "", description: "", deadline: "" });
+  const [handoutFile, setHandoutFile] = useState<File | null>(null);
+  const [handoutProgress, setHandoutProgress] = useState(0);
+  const handoutInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [formLoading, setFormLoading] = useState(false);
@@ -129,22 +140,52 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
 
   const handleCreateAssignment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newAssignment.title && newAssignment.description && newAssignment.deadline) {
+    if (!newAssignment.title || !newAssignment.description || !newAssignment.deadline) return;
+
+    try {
+      setFormLoading(true);
+      setHandoutProgress(0);
+      setError(null);
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      let fileUrl: string | null = null;
+      if (handoutFile) {
+        const { path } = await uploadTeacherAssignmentFile(handoutFile, user.id, (pct) =>
+          setHandoutProgress(pct)
+        );
+        fileUrl = path;
+      }
+
       try {
-        setFormLoading(true);
         const created = await createAssignment(
           newAssignment.title,
           newAssignment.description,
-          newAssignment.deadline
+          newAssignment.deadline,
+          fileUrl
         );
         setAssignments((prev) => [created, ...prev]);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to create assignment";
-        setError(message);
-      } finally {
-        setFormLoading(false);
+        toast.success("Assignment created");
+      } catch (insertErr) {
+        if (fileUrl) {
+          await deleteTeacherAssignmentFile(fileUrl).catch(() => {});
+        }
+        throw insertErr;
       }
+
       setNewAssignment({ title: "", description: "", deadline: "" });
+      setHandoutFile(null);
+      if (handoutInputRef.current) handoutInputRef.current.value = "";
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to create assignment";
+      setError(message);
+      toast.error("Could not create assignment", { description: message });
+    } finally {
+      setFormLoading(false);
+      setHandoutProgress(0);
     }
   };
 
@@ -228,26 +269,12 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
 
   return (
     <div className="min-h-screen bg-muted dark:bg-background transition-colors duration-300">
-      {/* Header (unchanged) */}
-      <header className="sticky top-0 z-50 border-b border-border bg-card/95 dark:bg-background/90 backdrop-blur-md">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg shadow-orange-500/30">
-              <GraduationCap className="h-5 w-5 text-white" />
-            </div>
-            <h1 className="text-xl font-semibold text-foreground">Teacher Dashboard</h1>
-          </div>
-          <div className="flex items-center gap-3">
-            <ThemeToggle />
-            <Button
-              variant="outline" size="sm" onClick={onLogout}
-              className="rounded-xl border-border bg-card dark:bg-secondary transition-all duration-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 dark:hover:bg-red-500/10 dark:hover:text-red-500 dark:hover:border-red-500/30"
-            >
-              <LogOut className="mr-2 h-4 w-4" />Logout
-            </Button>
-          </div>
-        </div>
-      </header>
+      <UniversityHeader
+        userName={userName}
+        onLogout={onLogout}
+        roleLabel="Teacher Dashboard"
+        showSearch={false}
+      />
 
       <main className="container mx-auto px-4 py-8 pb-28">
         {error && (
@@ -312,8 +339,45 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                         onChange={(e) => setNewAssignment((prev) => ({ ...prev, deadline: e.target.value }))}
                         className="rounded-xl bg-secondary border-border transition-all duration-200 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500" required />
                     </Field>
+                    <Field>
+                      <FieldLabel htmlFor="handout" className="text-foreground">Upload assignment file</FieldLabel>
+                      <div className="flex flex-col gap-2">
+                        <input
+                          ref={handoutInputRef}
+                          id="handout"
+                          type="file"
+                          accept={HANDOUT_ACCEPT}
+                          disabled={formLoading}
+                          className="flex h-10 w-full cursor-pointer rounded-xl border border-input bg-secondary px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-orange-500/15 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-orange-700 dark:file:bg-orange-500/20 dark:file:text-orange-300"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0] ?? null;
+                            setHandoutFile(f);
+                          }}
+                        />
+                        <p className="text-xs text-muted-foreground">PDF, DOC, or DOCX (optional)</p>
+                        {handoutFile ? (
+                          <p className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                            <Paperclip className="h-3.5 w-3.5 shrink-0 text-orange-500" />
+                            {handoutFile.name}
+                          </p>
+                        ) : null}
+                        {formLoading && handoutFile ? (
+                          <div className="space-y-1">
+                            <Progress value={handoutProgress} className="h-1.5" />
+                            <p className="text-xs text-muted-foreground text-center">Uploading file… {handoutProgress}%</p>
+                          </div>
+                        ) : null}
+                      </div>
+                    </Field>
                     <Button type="submit" disabled={formLoading} className="w-full rounded-xl gradient-button font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]">
-                      Create Assignment
+                      {formLoading ? (
+                        <span className="inline-flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Creating…
+                        </span>
+                      ) : (
+                        "Create Assignment"
+                      )}
                     </Button>
                   </FieldGroup>
                 </form>

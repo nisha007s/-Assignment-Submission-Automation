@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -21,13 +21,14 @@ import {
 import { cn } from "@/lib/utils";
 import { UploadModal } from "@/components/upload-modal";
 import { VersionHistory } from "@/components/version-history";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { FloatingMenu } from "@/components/floating-menu";
+import { UniversityHeader } from "@/components/ui/university-header";
 import { supabase } from "@/lib/supabase";
+import { resolveAssignmentHandoutUrl } from "@/lib/storage";
 import { getAssignments, getStudentSubmissions, type AssignmentRecord } from "@/lib/database";
 import {
-  Upload, LogOut, Calendar, FileText,
-  Search, ClipboardList, CheckCircle, Clock, Eye,
+  Upload, Calendar, FileText,
+  ClipboardList, CheckCircle, Clock, Eye, Download,
 } from "lucide-react";
 
 interface StudentDashboardProps {
@@ -152,6 +153,18 @@ export function StudentDashboard({ userId, userName, onLogout }: StudentDashboar
     setUploadModalOpen(true);
   };
 
+  const handleDownloadHandout = async (assignment: AssignmentRecord) => {
+    const url = assignment.file_url?.trim();
+    if (!url) return;
+    try {
+      const resolved = await resolveAssignmentHandoutUrl(url);
+      window.open(resolved, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Download failed";
+      toast.error("Could not open assignment file", { description: message });
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "submitted":
@@ -203,29 +216,15 @@ export function StudentDashboard({ userId, userName, onLogout }: StudentDashboar
 
   return (
     <div className="min-h-screen bg-muted dark:bg-background transition-colors duration-300">
-      {/* Header (unchanged) */}
-      <header className="sticky top-0 z-50 border-b border-border bg-card/95 dark:bg-background/90 backdrop-blur-md">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg shadow-orange-500/30">
-              <FileText className="h-5 w-5 text-white" />
-            </div>
-            <h1 className="text-xl font-semibold text-foreground">Student Dashboard</h1>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground hidden sm:inline">
-              Welcome, <span className="font-medium text-orange-500">{userName}</span>
-            </span>
-            <ThemeToggle />
-            <Button
-              variant="outline" size="sm" onClick={onLogout}
-              className="rounded-xl border-border bg-card dark:bg-secondary transition-all duration-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 dark:hover:bg-red-500/10 dark:hover:text-red-500 dark:hover:border-red-500/30"
-            >
-              <LogOut className="mr-2 h-4 w-4" />Logout
-            </Button>
-          </div>
-        </div>
-      </header>
+      <UniversityHeader
+        userName={userName}
+        onLogout={onLogout}
+        roleLabel="Student Dashboard"
+        showSearch
+        searchValue={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search assignments…"
+      />
 
       <main className="container mx-auto px-4 py-8 pb-28">
         <div className="grid gap-8">
@@ -261,27 +260,15 @@ export function StudentDashboard({ userId, userName, onLogout }: StudentDashboar
 
           {/* ── Available Assignments ────────────────────────────────────── */}
           <section>
-            <div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
-              <h2 className="text-lg font-semibold flex items-center gap-2 text-foreground">
-                <span className="h-2 w-2 rounded-full bg-orange-500" />
-                Available Assignments
-              </h2>
-              {/* NEW: Search bar */}
-              <div className="relative w-full sm:w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                <Input
-                  placeholder="Search assignments..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-9 h-9 rounded-xl bg-card border-border text-sm focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500"
-                />
-              </div>
-            </div>
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-foreground">
+              <span className="h-2 w-2 rounded-full bg-orange-500" />
+              Available Assignments
+            </h2>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {filteredAssignments.length === 0 ? (
                 <div className="col-span-3 flex flex-col items-center gap-2 py-14 text-muted-foreground">
-                  <Search className="h-8 w-8 opacity-30" />
+                  <FileText className="h-8 w-8 opacity-30" />
                   <p className="text-sm">No assignments match your search.</p>
                 </div>
               ) : filteredAssignments.map((assignment, i) => {
@@ -302,23 +289,36 @@ export function StudentDashboard({ userId, userName, onLogout }: StudentDashboar
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex flex-col gap-0.5">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                        <div className="flex flex-col gap-0.5 min-w-0">
                           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                             <Calendar className="h-3.5 w-3.5 text-orange-500 shrink-0" />
                             <span>Due: {assignment.deadline}</span>
                           </div>
-                          {/* NEW: Deadline urgency indicator */}
                           <span className={`text-xs ${dl.cls}`}>{dl.label}</span>
                         </div>
-                        <Button
-                          size="sm"
-                          onClick={() => handleUploadClick(assignment)}
-                          className="rounded-xl gradient-button font-medium transition-all duration-300 hover:scale-105 active:scale-95 shrink-0"
-                        >
-                          <Upload className="mr-1.5 h-3.5 w-3.5" />
-                          {isSubmitted ? "Resubmit" : "Upload"}
-                        </Button>
+                        <div className="flex flex-wrap gap-2 justify-end shrink-0">
+                          {assignment.file_url ? (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => void handleDownloadHandout(assignment)}
+                              className="rounded-xl border-red-200 bg-white/80 text-red-700 hover:bg-red-50 hover:border-red-300 dark:border-red-500/30 dark:bg-secondary dark:text-red-300 dark:hover:bg-red-500/10 transition-all duration-200"
+                            >
+                              <Download className="mr-1.5 h-3.5 w-3.5" />
+                              Download assignment
+                            </Button>
+                          ) : null}
+                          <Button
+                            size="sm"
+                            onClick={() => handleUploadClick(assignment)}
+                            className="rounded-xl gradient-button font-medium transition-all duration-300 hover:scale-105 active:scale-95"
+                          >
+                            <Upload className="mr-1.5 h-3.5 w-3.5" />
+                            {isSubmitted ? "Resubmit" : "Upload"}
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
