@@ -89,8 +89,12 @@ export function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
       ]);
       setAssignments(assignmentRows);
       setSubmissions(mapTeacherSubmissions(submissionRows));
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to load teacher dashboard data";
+    }  catch (err) {
+      console.error("CREATE ASSIGNMENT ERROR:", err); // 👈 ADD THIS LINE
+    
+      const message =
+        err instanceof Error ? err.message : "Failed to create assignment";
+    
       setError(message);
     } finally {
       setLoading(false);

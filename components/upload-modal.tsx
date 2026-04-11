@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,18 +11,32 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Upload, FileText, X } from "lucide-react";
+import { Upload, FileText, X, Loader2 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { uploadFile, deleteFile } from "@/lib/storage";
+import { getNextVersionNumber } from "@/lib/database";
+
+const MAX_BYTES = 10 * 1024 * 1024;
+const ACCEPTED = /\.(pdf|doc|docx|zip|ppt|pptx)$/i;
 
 interface UploadModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   assignmentTitle: string;
-  onSubmit: (file: File) => void;
+  assignmentId: string;
+  onSuccess?: () => void;
 }
 
-export function UploadModal({ open, onOpenChange, assignmentTitle, onSubmit }: UploadModalProps) {
+export function UploadModal({
+  open,
+  onOpenChange,
+  assignmentTitle,
+  assignmentId,
+  onSuccess,
+}: UploadModalProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,12 +63,57 @@ export function UploadModal({ open, onOpenChange, assignmentTitle, onSubmit }: U
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedFile) {
-      onSubmit(selectedFile);
+    if (!selectedFile || uploading) return;
+
+    if (!ACCEPTED.test(selectedFile.name)) {
+      toast.error("Invalid file type", {
+        description: "Use PDF, DOC, DOCX, ZIP, PPT, or PPTX.",
+      });
+      return;
+    }
+    if (selectedFile.size > MAX_BYTES) {
+      toast.error("File too large", { description: "Maximum size is 10 MB." });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError) throw userError;
+      const user = userData.user;
+      if (!user) throw new Error("Not signed in");
+
+      const version = await getNextVersionNumber(assignmentId, user.id);
+      const { path } = await uploadFile(selectedFile, assignmentId, user.id, version);
+
+      const { error: insertError } = await supabase.from("submissions").insert({
+        assignment_id: assignmentId,
+        student_id: user.id,
+        file_url: path,
+        file_name: selectedFile.name,
+        file_size: selectedFile.size,
+        version,
+      });
+
+      if (insertError) {
+        await deleteFile(path).catch(() => {});
+        throw insertError;
+      }
+
+      toast.success("Submission uploaded", {
+        description: `Version ${version} submitted for ${assignmentTitle}.`,
+      });
       setSelectedFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
       onOpenChange(false);
+      onSuccess?.();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Upload failed";
+      toast.error("Upload failed", { description: message });
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -85,12 +145,13 @@ export function UploadModal({ open, onOpenChange, assignmentTitle, onSubmit }: U
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => !uploading && fileInputRef.current?.click()}
               className={`
                 relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer
                 transition-all duration-300
-                ${isDragging 
-                  ? "border-orange-500 bg-orange-500/10 scale-[1.02]" 
+                ${uploading ? "pointer-events-none opacity-60" : ""}
+                ${isDragging
+                  ? "border-orange-500 bg-orange-500/10 scale-[1.02]"
                   : "border-border hover:border-orange-500/50 hover:bg-muted/50 dark:hover:bg-secondary/50"
                 }
                 ${selectedFile ? "border-orange-500/50 bg-orange-50 dark:bg-orange-500/5" : ""}
@@ -101,8 +162,9 @@ export function UploadModal({ open, onOpenChange, assignmentTitle, onSubmit }: U
                 type="file"
                 onChange={handleFileChange}
                 className="hidden"
+                disabled={uploading}
               />
-              
+
               {selectedFile ? (
                 <div className="flex flex-col items-center gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-100 dark:bg-orange-500/15">
@@ -118,6 +180,7 @@ export function UploadModal({ open, onOpenChange, assignmentTitle, onSubmit }: U
                     type="button"
                     variant="ghost"
                     size="sm"
+                    disabled={uploading}
                     onClick={(e) => {
                       e.stopPropagation();
                       clearFile();
@@ -145,23 +208,33 @@ export function UploadModal({ open, onOpenChange, assignmentTitle, onSubmit }: U
               )}
             </div>
           </div>
-          
+
           <DialogFooter className="mt-6 gap-2">
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
+              disabled={uploading}
               onClick={() => onOpenChange(false)}
               className="rounded-xl border-border bg-muted dark:bg-secondary"
             >
               Cancel
             </Button>
-            <Button 
-              type="submit" 
-              disabled={!selectedFile}
+            <Button
+              type="submit"
+              disabled={!selectedFile || uploading}
               className="rounded-xl gradient-button font-medium transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100"
             >
-              <Upload className="mr-2 h-4 w-4" />
-              Submit
+              {uploading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Uploading…
+                </>
+              ) : (
+                <>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Submit
+                </>
+              )}
             </Button>
           </DialogFooter>
         </form>

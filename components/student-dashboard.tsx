@@ -49,6 +49,7 @@ export function StudentDashboard({ userName, onLogout }: StudentDashboardProps) 
   const [assignments, setAssignments] = useState<AssignmentRecord[]>([]);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState<string>("");
+  const [selectedAssignmentId, setSelectedAssignmentId] = useState<string>("");
   const [submissions, setSubmissions] = useState<StudentSubmissionView[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -102,27 +103,10 @@ export function StudentDashboard({ userName, onLogout }: StudentDashboardProps) 
   }, []);
 
   // ── Existing handlers (unchanged) ────────────────────────────────────────
-  const handleUploadClick = (assignmentTitle: string) => {
-    setSelectedAssignment(assignmentTitle);
+  const handleUploadClick = (assignment: AssignmentRecord) => {
+    setSelectedAssignment(assignment.title);
+    setSelectedAssignmentId(assignment.id);
     setUploadModalOpen(true);
-  };
-
-  const handleUploadSubmit = (file: File) => {
-    const existingSubmission = submissions.find((s) => s.assignmentName === selectedAssignment);
-    const newVersion = existingSubmission
-      ? `v${parseInt(existingSubmission.version.slice(1)) + 1}`
-      : "v1";
-    const newSubmission = {
-      id: String(Date.now()),
-      assignmentName: selectedAssignment,
-      version: newVersion,
-      uploadDate: new Date().toISOString().split("T")[0],
-      status: "submitted",
-    };
-    setSubmissions((prev) => {
-      const filtered = prev.filter((s) => s.assignmentName !== selectedAssignment);
-      return [...filtered, newSubmission];
-    });
   };
 
   const getStatusBadge = (status: string) => {
@@ -286,7 +270,7 @@ export function StudentDashboard({ userName, onLogout }: StudentDashboardProps) 
                         </div>
                         <Button
                           size="sm"
-                          onClick={() => handleUploadClick(assignment.title)}
+                          onClick={() => handleUploadClick(assignment)}
                           className="rounded-xl gradient-button font-medium transition-all duration-300 hover:scale-105 active:scale-95 shrink-0"
                         >
                           <Upload className="mr-1.5 h-3.5 w-3.5" />
@@ -352,22 +336,17 @@ export function StudentDashboard({ userName, onLogout }: StudentDashboardProps) 
         open={uploadModalOpen}
         onOpenChange={setUploadModalOpen}
         assignmentTitle={selectedAssignment}
-        onSubmit={handleUploadSubmit}
+        assignmentId={selectedAssignmentId}
+        onSuccess={() => void loadData()}
       />
 
       <FloatingMenu
         onHomeClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
         onUploadClick={() => {
-          if (assignments.length > 0) {
-            setSelectedAssignment(assignments[0].title);
-            setUploadModalOpen(true);
-          }
+          if (assignments.length > 0) handleUploadClick(assignments[0]);
         }}
         onCenterClick={() => {
-          if (assignments.length > 0) {
-            setSelectedAssignment(assignments[0].title);
-            setUploadModalOpen(true);
-          }
+          if (assignments.length > 0) handleUploadClick(assignments[0]);
         }}
         onSearchClick={() => document.querySelector<HTMLInputElement>("input[placeholder*='Search']")?.focus()}
         centerLabel="Upload Assignment"

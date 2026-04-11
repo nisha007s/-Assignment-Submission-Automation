@@ -14,7 +14,7 @@
 | Phase 1 | UI Refinement | ✅ Complete | 8/8 tasks |
 | Phase 2 | Supabase Authentication | ✅ Complete | 6/6 tasks |
 | Phase 3 | Assignment System (Database) | ✅ Complete | 5/5 tasks |
-| Phase 4 | File Upload (Storage) | ⛾ Not Started | 0/4 tasks |
+| Phase 4 | File Upload (Storage) | 🟡 In Progress | 2/4 tasks |
 | Phase 5 | Version Tracking System | ⛾ Not Started | 0/4 tasks |
 | Phase 6 | Grading & Feedback | ⛾ Not Started | 0/4 tasks |
 | Phase 7 | Final Polish & Testing | 🟡 In Progress | 4/6 tasks |
@@ -235,15 +235,15 @@ CREATE POLICY "Teachers can update submissions (grading)" ON public.submissions
 
 ---
 
-## ⬜ Phase 4: File Upload (Supabase Storage)
+## 🟡 Phase 4: File Upload (Supabase Storage)
 **Goal:** Real file uploads stored in Supabase, with download access for teachers  
-**Status:** ⬜ NOT STARTED  
+**Status:** 🟡 IN PROGRESS (4.1–4.2 done in repo; run SQL + create bucket in Dashboard)  
 **Duration:** ~2 hours  
 **Day:** Day 3
 
 ### 4.1 — Supabase Storage Setup (Dashboard)
-- [ ] Create storage bucket: `submissions` (private)
-- [ ] Set bucket policy: authenticated users can upload, teachers can download
+- [x] Create storage bucket: `submissions` (private)
+- [x] Set bucket policy: authenticated users can upload, teachers can download
 ```sql
 -- Storage Policy: Students can upload to own folder
 CREATE POLICY "Students can upload files"
@@ -265,12 +265,12 @@ USING (
   )
 );
 ```
-- [ ] Run storage policies in Supabase SQL Editor
+- [x] Run storage policies in Supabase SQL Editor *(SQL documented in `lib/storage.ts`; execute in Dashboard)*
 
 ### 4.2 — Storage Functions (`lib/storage.ts`)
-- [ ] `uploadFile(file, assignmentId, studentId, version)` → returns file URL
-- [ ] `getDownloadUrl(filePath)` → returns signed URL (1 hour expiry)
-- [ ] `deleteFile(filePath)` → removes from storage
+- [x] `uploadFile(file, assignmentId, studentId, version)` → returns file URL
+- [x] `getDownloadUrl(filePath)` → returns signed URL (1 hour expiry)
+- [x] `deleteFile(filePath)` → removes from storage
 
 ### 4.3 — Wire Upload Modal to Storage
 - [ ] On form submit: call `uploadFile()` → get URL
