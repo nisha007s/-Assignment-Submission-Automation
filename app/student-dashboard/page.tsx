@@ -33,5 +33,11 @@ export default function StudentDashboardPage() {
 
   if (!session || !profile || profile.role !== "student") return null;
 
-  return <StudentDashboard userName={profile.full_name} onLogout={signOut} />;
+  return  <StudentDashboard
+  userName={profile.full_name}
+  onLogout={async () => {
+    await signOut();
+    router.push("/");
+  }}
+/>;
 }
