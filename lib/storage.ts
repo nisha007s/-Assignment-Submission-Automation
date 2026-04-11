@@ -1,9 +1,9 @@
 "use client";
 
-import { supabase } from "./supabase";
+import { supabase, supabaseUrl, supabaseAnonKey } from "./supabase";
 
 /** Supabase Storage bucket for assignment files. */
-export const ASSIGNMENTS_BUCKET = "assignments" as const;
+export const ASSIGNMENTS_BUCKET = "submissions" as const;
 
 const DEFAULT_SIGNED_URL_TTL = 3600;
 
@@ -14,47 +14,83 @@ function sanitizeFileName(name: string): string {
   return name.replace(/[/\\?#]/g, "_").trim() || "file";
 }
 
-function getEnvOrThrow(name: string): string {
-  const v = process.env[name];
-  if (!v) throw new Error(`Missing ${name}`);
-  return v;
-}
-
 export interface UploadFileResult {
-  /** Object key within the bucket, e.g. `{userId}/{timestamp}_{name}`. */
+  /** Object key within the bucket: `{assignmentId}/{userId}/{version}/{timestamp}_{name}`. */
   path: string;
   /** Public URL when the bucket is public (for display or legacy). Store `path` in DB for signed downloads. */
   publicUrl: string;
 }
 
+export interface UploadFileContext {
+  assignmentId: string;
+  userId: string;
+  version: number;
+}
+
+async function getValidAccessToken(): Promise<string> {
+  let {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session?.access_token) {
+    const { data, error } = await supabase.auth.refreshSession();
+    if (error) throw new Error(`Session refresh failed: ${error.message}`);
+    session = data.session;
+  }
+
+  if (!session?.access_token) throw new Error("Not authenticated");
+  return session.access_token;
+}
+
 /**
- * Upload a file to the `assignments` bucket with XMLHttpRequest so upload progress is available.
- * Path: `${userId}/${Date.now()}_${file.name}` (sanitized file segment).
+ * Upload a file to the `submissions` bucket with XMLHttpRequest so upload progress is available.
+ * Path: `{assignmentId}/{userId}/{version}/{timestamp}_{sanitizedName}` (matches Storage RLS in docs).
  */
 export async function uploadFile(
   file: File,
-  userId: string,
+  context: UploadFileContext,
   onProgress?: (percent: number) => void
 ): Promise<UploadFileResult> {
+  const { assignmentId, userId, version } = context;
+  if (!assignmentId?.trim()) throw new Error("Missing assignmentId for upload path");
+  if (!userId?.trim()) throw new Error("Missing userId for upload path");
+
   const safeName = sanitizeFileName(file.name);
-  const path = `${userId}/${Date.now()}_${safeName}`;
+  const path = `${assignmentId}/${userId}/v${version}-${Date.now()}-${safeName}`;
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session?.access_token) throw new Error("Not authenticated");
+  const accessToken = await getValidAccessToken();
 
-  const baseUrl = getEnvOrThrow("NEXT_PUBLIC_SUPABASE_URL").replace(/\/$/, "");
-  const anonKey = getEnvOrThrow("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error(
+      "Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Add them to .env.local and restart the dev server."
+    );
+  }
+  const baseUrl = supabaseUrl.replace(/\/$/, "");
+  const anonKey = supabaseAnonKey;
   const encodedPath = path.split("/").map(encodeURIComponent).join("/");
   const uploadUrl = `${baseUrl}/storage/v1/object/${ASSIGNMENTS_BUCKET}/${encodedPath}`;
+
+  console.log("[storage] starting XHR upload", { bucket: ASSIGNMENTS_BUCKET, path, bytes: file.size });
 
   onProgress?.(0);
 
   await new Promise<void>((resolve, reject) => {
+    let settled = false;
+    const settle = (action: "ok" | "err", err?: Error) => {
+      if (settled) return;
+      settled = true;
+      if (action === "ok") {
+        onProgress?.(100);
+        resolve();
+      } else {
+        reject(err ?? new Error("Upload failed"));
+      }
+    };
+
     const xhr = new XMLHttpRequest();
     xhr.open("POST", uploadUrl);
-    xhr.setRequestHeader("Authorization", `Bearer ${session.access_token}`);
+    xhr.timeout = 15 * 60 * 1000;
+    xhr.setRequestHeader("Authorization", `Bearer ${accessToken}`);
     xhr.setRequestHeader("apikey", anonKey);
     xhr.setRequestHeader("Cache-Control", "max-age=3600");
     xhr.setRequestHeader("x-upsert", "false");
@@ -63,25 +99,36 @@ export async function uploadFile(
     xhr.upload.onprogress = (e) => {
       if (!onProgress) return;
       if (e.lengthComputable && e.total > 0) {
-        onProgress(Math.min(99, Math.round((e.loaded / e.total) * 100)));
+        const pct = Math.round((e.loaded / e.total) * 100);
+        onProgress(Math.min(100, pct));
       }
     };
 
-    xhr.onload = () => {
+    xhr.onreadystatechange = () => {
+      if (xhr.readyState !== XMLHttpRequest.DONE) return;
       if (xhr.status >= 200 && xhr.status < 300) {
-        onProgress?.(100);
-        resolve();
+        console.log("[storage] XHR complete", { status: xhr.status, path });
+        settle("ok");
+        return;
+      }
+      if (xhr.status === 0) {
+        settle("err", new Error("Network error during upload (status 0)"));
         return;
       }
       try {
         const body = JSON.parse(xhr.responseText) as { message?: string; error?: string };
-        reject(new Error(body.message || body.error || `Upload failed (${xhr.status})`));
+        settle(
+          "err",
+          new Error(body.message || body.error || `Upload failed (${xhr.status})`)
+        );
       } catch {
-        reject(new Error(xhr.statusText || `Upload failed (${xhr.status})`));
+        settle("err", new Error(xhr.statusText || `Upload failed (${xhr.status})`));
       }
     };
 
-    xhr.onerror = () => reject(new Error("Network error during upload"));
+    xhr.onerror = () => settle("err", new Error("Network error during upload"));
+    xhr.ontimeout = () => settle("err", new Error("Upload timed out"));
+
     xhr.send(file);
   });
 
@@ -89,6 +136,7 @@ export async function uploadFile(
     data: { publicUrl },
   } = supabase.storage.from(ASSIGNMENTS_BUCKET).getPublicUrl(path);
 
+  console.log("[storage] uploadFile resolved", { path });
   return { path, publicUrl: publicUrl ?? "" };
 }
 

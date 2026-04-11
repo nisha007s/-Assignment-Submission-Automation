@@ -57,20 +57,39 @@ export interface CreateSubmissionInput {
 export async function createSubmission(data: CreateSubmissionInput): Promise<{ id: string }> {
   const version = data.version ?? 1;
 
+  const payload = {
+    assignment_id: data.assignment_id,
+    student_id: data.student_id,
+    file_url: data.file_url,
+    file_name: data.file_name,
+    file_size: data.file_size,
+    version,
+    status: "submitted" as const,
+  };
+
+  const urlPreview =
+    payload.file_url && payload.file_url.length > 80
+      ? `${payload.file_url.slice(0, 80)}…`
+      : payload.file_url;
+  console.log("[createSubmission] inserting row", { ...payload, file_url: urlPreview });
+
   const { data: row, error } = await supabase
     .from("submissions")
-    .insert({
-      assignment_id: data.assignment_id,
-      student_id: data.student_id,
-      file_url: data.file_url,
-      file_name: data.file_name,
-      file_size: data.file_size,
-      version,
-    })
+    .insert(payload)
     .select("id")
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error("[createSubmission] Supabase error", {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code,
+    });
+    throw error;
+  }
+
+  console.log("[createSubmission] insert OK", row);
   if (!row?.id) throw new Error("Submission insert returned no id");
   return { id: row.id as string };
 }

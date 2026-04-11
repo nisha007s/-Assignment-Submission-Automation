@@ -43,11 +43,9 @@ export function UploadModal({
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-  
+
     if (file) {
       setSelectedFile(file);
-  
-      // ✅ IMPORTANT FIX
       e.target.value = "";
     }
   };
@@ -72,81 +70,107 @@ export function UploadModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("SUBMIT CLICKED");
-  
-    if (!selectedFile || uploading) return;
-  
+    console.log("[upload] submit: click");
+
+    if (!selectedFile) {
+      console.log("[upload] submit: aborted — no file");
+      return;
+    }
+    if (uploading) {
+      console.log("[upload] submit: aborted — already uploading");
+      return;
+    }
+    if (!assignmentId?.trim()) {
+      console.error("[upload] submit: missing assignmentId");
+      toast.error("Upload failed", { description: "No assignment selected." });
+      return;
+    }
+
     if (!ACCEPTED.test(selectedFile.name)) {
       toast.error("Invalid file type", {
         description: "Use PDF, DOC, DOCX, ZIP, PPT, or PPTX.",
       });
       return;
     }
-  
+
     if (selectedFile.size > MAX_BYTES) {
       toast.error("File too large", {
         description: "Maximum size is 10 MB.",
       });
       return;
     }
-  
+
+    setUploading(true);
+    setUploadProgress(0);
+
     try {
-      setUploading(true);
-      setUploadProgress(0);
-  
-      const { data: userData, error: userError } =
-        await supabase.auth.getUser();
-  
-      if (userError) throw userError;
-  
+      console.log("[upload] resolving user…");
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+
+      if (userError) {
+        console.error("[upload] getUser error", userError);
+        throw userError;
+      }
+
       const user = userData.user;
-      if (!user) throw new Error("Not signed in");
-  
-      const version = await getNextVersionNumber(
-        assignmentId,
-        user.id
-      );
-  
+      if (!user) {
+        console.error("[upload] no user on session");
+        throw new Error("Not signed in");
+      }
+
+      console.log("[upload] user OK", { id: user.id });
+
+      console.log("[upload] getNextVersionNumber…", { assignmentId, studentId: user.id });
+      const version = await getNextVersionNumber(assignmentId, user.id);
+      console.log("[upload] next version", version);
+
+      console.log("[upload] starting storage upload…");
       const { path } = await uploadFile(
         selectedFile,
-        user.id,
+        { assignmentId: assignmentId.trim(), userId: user.id, version },
         (pct) => setUploadProgress(pct)
       );
-  
+      console.log("[upload] storage upload finished", { path });
+
       try {
-        await createSubmission({
-          assignment_id: assignmentId,
+        console.log("[upload] inserting submission row…");
+        const insertResult = await createSubmission({
+          assignment_id: assignmentId.trim(),
           student_id: user.id,
           file_url: path,
           file_name: selectedFile.name,
           file_size: selectedFile.size,
           version,
         });
+        console.log("[upload] insert finished", insertResult);
       } catch (insertErr) {
-        await deleteFile(path).catch(() => {});
+        console.error("[upload] insert failed — removing uploaded object", insertErr);
+        await deleteFile(path).catch((delErr) =>
+          console.warn("[upload] rollback deleteFile failed", delErr)
+        );
         throw insertErr;
       }
-  
+
       toast.success("Submission uploaded", {
         description: `Version ${version} submitted for ${assignmentTitle}.`,
       });
-  
+
       setSelectedFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
-  
+
       onOpenChange(false);
       onSuccess?.();
-  
+      console.log("[upload] flow complete");
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Upload failed";
+      console.error("[upload] flow error", err);
+      const message = err instanceof Error ? err.message : "Upload failed";
       toast.error("Upload failed", { description: message });
     } finally {
+      console.log("[upload] finally: clearing loading state");
       setUploading(false);
       setUploadProgress(0);
     }
   };
-   
 
   const clearFile = () => {
     setSelectedFile(null);
@@ -181,9 +205,10 @@ export function UploadModal({
                 relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer
                 transition-all duration-300
                 ${uploading ? "pointer-events-none opacity-60" : ""}
-                ${isDragging
-                  ? "border-orange-500 bg-orange-500/10 scale-[1.02]"
-                  : "border-border hover:border-orange-500/50 hover:bg-muted/50 dark:hover:bg-secondary/50"
+                ${
+                  isDragging
+                    ? "border-orange-500 bg-orange-500/10 scale-[1.02]"
+                    : "border-border hover:border-orange-500/50 hover:bg-muted/50 dark:hover:bg-secondary/50"
                 }
                 ${selectedFile ? "border-orange-500/50 bg-orange-50 dark:bg-orange-500/5" : ""}
               `}
@@ -212,8 +237,8 @@ export function UploadModal({
                     variant="ghost"
                     size="sm"
                     disabled={uploading}
-                    onClick={(e) => {
-                      e.stopPropagation();
+                    onClick={(ev) => {
+                      ev.stopPropagation();
                       clearFile();
                     }}
                     className="text-muted-foreground hover:text-red-500"
