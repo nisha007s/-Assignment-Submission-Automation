@@ -17,22 +17,24 @@ export async function signUp(
 
   // ✅ INSERT PROFILE AFTER SIGNUP
   if (data.user) {
-    const { error: profileError } = await supabase
+    const { data: profileData, error: profileError } = await supabase
       .from("profiles")
-      .insert([
+      .upsert(
         {
           id: data.user.id,
           email: email,
           full_name: fullName,
           role: role,
         },
-      ]);
-
+        { onConflict: "id" }
+      );
+  
     if (profileError) {
-      console.error("Profile insert failed:", profileError);
+      console.error("Profile upsert failed:", profileError);
       throw profileError;
     }
   }
+  
 
   return data;
 }
