@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { UploadModal } from "@/components/upload-modal";
+import { VersionHistory } from "@/components/version-history";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { FloatingMenu } from "@/components/floating-menu";
 import { supabase } from "@/lib/supabase";
@@ -24,16 +25,23 @@ import {
 } from "lucide-react";
 
 interface StudentDashboardProps {
+  userId: string;
   userName: string;
   onLogout: () => void;
 }
 
 interface StudentSubmissionView {
   id: string;
+  assignmentId: string;
   assignmentName: string;
   version: string;
   uploadDate: string;
   status: string;
+}
+
+interface HistoryOpen {
+  assignmentId: string;
+  assignmentName: string;
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -45,7 +53,7 @@ function getDeadlineInfo(deadline: string) {
   return { label: `${days}d left`, cls: "text-muted-foreground" };
 }
 
-export function StudentDashboard({ userName, onLogout }: StudentDashboardProps) {
+export function StudentDashboard({ userId, userName, onLogout }: StudentDashboardProps) {
   const [assignments, setAssignments] = useState<AssignmentRecord[]>([]);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState<string>("");
@@ -54,6 +62,7 @@ export function StudentDashboard({ userName, onLogout }: StudentDashboardProps) 
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [historyOpen, setHistoryOpen] = useState<HistoryOpen | null>(null);
 
   const loadData = async () => {
     try {
@@ -67,6 +76,7 @@ export function StudentDashboard({ userName, onLogout }: StudentDashboardProps) 
       setSubmissions(
         submissionRows.map((row) => ({
           id: row.id,
+          assignmentId: row.assignment_id,
           assignmentName: row.assignment_title,
           version: `v${row.version}`,
           uploadDate: row.created_at.split("T")[0],
@@ -299,12 +309,13 @@ export function StudentDashboard({ userName, onLogout }: StudentDashboardProps) 
                       <TableHead className="font-semibold text-foreground">Version</TableHead>
                       <TableHead className="font-semibold text-foreground">Upload Date</TableHead>
                       <TableHead className="font-semibold text-foreground">Status</TableHead>
+                      <TableHead className="text-right font-semibold text-foreground">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {submissions.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center text-muted-foreground py-12">
+                        <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
                           <div className="flex flex-col items-center gap-2">
                             <FileText className="h-8 w-8 text-muted-foreground/50" />
                             <span>No submissions yet</span>
@@ -321,6 +332,24 @@ export function StudentDashboard({ userName, onLogout }: StudentDashboardProps) 
                           <TableCell>{getVersionBadge(submission.version)}</TableCell>
                           <TableCell className="text-muted-foreground">{submission.uploadDate}</TableCell>
                           <TableCell>{getStatusBadge(submission.status)}</TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 rounded-lg hover:bg-blue-100 hover:text-blue-600 dark:hover:bg-blue-500/10 dark:hover:text-blue-400"
+                              aria-label={`View history for ${submission.assignmentName}`}
+                              onClick={() =>
+                                setHistoryOpen({
+                                  assignmentId: submission.assignmentId,
+                                  assignmentName: submission.assignmentName,
+                                })
+                              }
+                            >
+                              <Eye className="h-3.5 w-3.5 mr-1.5" />
+                              History
+                            </Button>
+                          </TableCell>
                         </TableRow>
                       ))
                     )}
@@ -340,13 +369,30 @@ export function StudentDashboard({ userName, onLogout }: StudentDashboardProps) 
         onSuccess={() => void loadData()}
       />
 
+      <VersionHistory
+        open={!!historyOpen}
+        onOpenChange={(o) => !o && setHistoryOpen(null)}
+        assignmentId={historyOpen?.assignmentId ?? ""}
+        studentId={userId}
+        subtitle={historyOpen ? `${userName} · ${historyOpen.assignmentName}` : ""}
+        isTeacher={false}
+      />
+
       <FloatingMenu
         onHomeClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
         onUploadClick={() => {
-          if (assignments.length > 0) handleUploadClick(assignments[0]);
+          if (assignments.length === 0) {
+            alert("No assignments available");
+            return;
+          }
+          handleUploadClick(assignments[0]);
         }}
         onCenterClick={() => {
-          if (assignments.length > 0) handleUploadClick(assignments[0]);
+          if (assignments.length === 0) {
+            alert("No assignments available");
+            return;
+          }
+          handleUploadClick(assignments[0]);
         }}
         onSearchClick={() => document.querySelector<HTMLInputElement>("input[placeholder*='Search']")?.focus()}
         centerLabel="Upload Assignment"

@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +15,7 @@ import {
 import { Upload, FileText, X, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { uploadFile, deleteFile } from "@/lib/storage";
-import { getNextVersionNumber } from "@/lib/database";
+import { createSubmission, getNextVersionNumber } from "@/lib/database";
 
 const MAX_BYTES = 10 * 1024 * 1024;
 const ACCEPTED = /\.(pdf|doc|docx|zip|ppt|pptx)$/i;
@@ -37,6 +38,7 @@ export function UploadModal({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -65,6 +67,16 @@ export function UploadModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+     // ✅ ADD THIS BLOCK HERE
+  const { data: userData } = await supabase.auth.getUser();
+  const user = userData?.user;
+
+  if (!user || !user.id) {
+    console.error("User not loaded yet");
+    alert("Please wait, user not ready");
+    return;
+  }
+  
     if (!selectedFile || uploading) return;
 
     if (!ACCEPTED.test(selectedFile.name)) {
@@ -79,6 +91,7 @@ export function UploadModal({
     }
 
     setUploading(true);
+    setUploadProgress(0);
     try {
       const { data: userData, error: userError } = await supabase.auth.getUser();
       if (userError) throw userError;
@@ -86,20 +99,20 @@ export function UploadModal({
       if (!user) throw new Error("Not signed in");
 
       const version = await getNextVersionNumber(assignmentId, user.id);
-      const { path } = await uploadFile(selectedFile, assignmentId, user.id, version);
+      const { path } = await uploadFile(selectedFile, user.id, (pct) => setUploadProgress(pct));
 
-      const { error: insertError } = await supabase.from("submissions").insert({
-        assignment_id: assignmentId,
-        student_id: user.id,
-        file_url: path,
-        file_name: selectedFile.name,
-        file_size: selectedFile.size,
-        version,
-      });
-
-      if (insertError) {
+      try {
+        await createSubmission({
+          assignment_id: assignmentId,
+          student_id: user.id,
+          file_url: path,
+          file_name: selectedFile.name,
+          file_size: selectedFile.size,
+          version,
+        });
+      } catch (insertErr) {
         await deleteFile(path).catch(() => {});
-        throw insertError;
+        throw insertErr;
       }
 
       toast.success("Submission uploaded", {
@@ -114,6 +127,7 @@ export function UploadModal({
       toast.error("Upload failed", { description: message });
     } finally {
       setUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -207,6 +221,15 @@ export function UploadModal({
                 </div>
               )}
             </div>
+
+            {uploading && (
+              <div className="space-y-2">
+                <Progress value={uploadProgress} className="h-2" />
+                <p className="text-xs text-center text-muted-foreground">
+                  Uploading… {uploadProgress}%
+                </p>
+              </div>
+            )}
           </div>
 
           <DialogFooter className="mt-6 gap-2">

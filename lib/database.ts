@@ -27,6 +27,8 @@ export interface TeacherSubmissionRecord {
   version: number;
   status: "submitted" | "under_review" | "graded";
   created_at: string;
+  file_url: string | null;
+  file_name: string | null;
 }
 
 export interface SubmissionVersionRecord {
@@ -37,8 +39,40 @@ export interface SubmissionVersionRecord {
   status: "submitted" | "under_review" | "graded";
   file_name: string;
   file_size: number;
+  file_url: string | null;
   version_note: string | null;
   created_at: string;
+}
+
+export interface CreateSubmissionInput {
+  assignment_id: string;
+  student_id: string;
+  file_url: string;
+  file_name: string;
+  file_size: number;
+  /** Defaults to `1` when omitted. */
+  version?: number;
+}
+
+export async function createSubmission(data: CreateSubmissionInput): Promise<{ id: string }> {
+  const version = data.version ?? 1;
+
+  const { data: row, error } = await supabase
+    .from("submissions")
+    .insert({
+      assignment_id: data.assignment_id,
+      student_id: data.student_id,
+      file_url: data.file_url,
+      file_name: data.file_name,
+      file_size: data.file_size,
+      version,
+    })
+    .select("id")
+    .single();
+
+  if (error) throw error;
+  if (!row?.id) throw new Error("Submission insert returned no id");
+  return { id: row.id as string };
 }
 
 export async function getAssignments(): Promise<AssignmentRecord[]> {
@@ -114,7 +148,9 @@ export async function getStudentSubmissions(): Promise<StudentSubmissionRecord[]
 export async function getAllSubmissions(): Promise<TeacherSubmissionRecord[]> {
   const { data, error } = await supabase
     .from("submissions")
-    .select("id, assignment_id, student_id, version, status, created_at, assignments(title), profiles!submissions_student_id_fkey(full_name)")
+    .select(
+      "id, assignment_id, student_id, version, status, created_at, file_url, file_name, assignments(title), profiles!submissions_student_id_fkey(full_name)"
+    )
     .order("created_at", { ascending: false });
 
   if (error) throw error;
@@ -133,6 +169,8 @@ export async function getAllSubmissions(): Promise<TeacherSubmissionRecord[]> {
         version: row.version,
         status: row.status,
         created_at: row.created_at,
+        file_url: row.file_url ?? null,
+        file_name: row.file_name ?? null,
       });
     }
   });
@@ -148,7 +186,7 @@ export async function getVersionHistory(
 ): Promise<SubmissionVersionRecord[]> {
   const { data, error } = await supabase
     .from("submissions")
-    .select("id, assignment_id, student_id, version, status, file_name, file_size, version_note, created_at")
+    .select("id, assignment_id, student_id, version, status, file_name, file_size, file_url, version_note, created_at")
     .eq("assignment_id", assignmentId)
     .eq("student_id", studentId)
     .order("version", { ascending: false });
