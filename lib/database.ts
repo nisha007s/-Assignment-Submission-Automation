@@ -52,9 +52,11 @@ export async function getAssignments(): Promise<AssignmentRecord[]> {
 }
 
 export async function createAssignment(title: string, description: string, deadline: string) {
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-  if (userError) throw userError;
-  if (!userData.user) throw new Error("Not authenticated");
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  
+  if (!user) throw new Error("Not authenticated");
 
   const { data, error } = await supabase
     .from("assignments")
@@ -62,7 +64,7 @@ export async function createAssignment(title: string, description: string, deadl
       title,
       description,
       deadline,
-      teacher_id: userData.user.id,
+      teacher_id: user.id,
     })
     .select("*")
     .single();
