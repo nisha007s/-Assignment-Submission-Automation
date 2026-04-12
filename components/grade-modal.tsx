@@ -91,7 +91,6 @@ export function GradeModal({
       onOpenChange(false);
       onSubmitted();
     } catch (err) {
-      console.error("[grade-modal] gradeSubmission failed", err);
       toast.error("Could not save grade", { description: getErrorMessage(err) });
     } finally {
       setSubmitting(false);
@@ -104,7 +103,7 @@ export function GradeModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-2xl bg-card border-border">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-card border-border">
         <DialogHeader>
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg shadow-orange-500/30 mb-1">
             <GraduationCap className="h-6 w-6 text-white" />

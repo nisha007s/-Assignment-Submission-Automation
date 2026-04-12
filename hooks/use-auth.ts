@@ -1,6 +1,7 @@
- "use client";
+"use client";
 
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { getUserProfileWithRetry } from "@/lib/auth";
 import type { Profile } from "@/lib/supabase";
@@ -11,16 +12,12 @@ export function useAuth() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // ✅ 1. Load session ONCE
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      console.log("[useAuth] initial session", session?.user?.id ?? "none");
-
       setSession(session);
 
       if (session) {
         const p = await getUserProfileWithRetry();
-        console.log("[useAuth] initial profile", p);
         setProfile(p);
       }
 
@@ -28,25 +25,33 @@ export function useAuth() {
     });
   }, []);
 
-  // ✅ 2. Listen for auth changes
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log("[useAuth] auth state changed", event, session?.user?.id ?? "none");
-
-        setSession(session);
-
-        if (session) {
-          const p = await getUserProfileWithRetry();
-          console.log("[useAuth] profile after auth change", p);
-          setProfile(p);
-        } else {
-          setProfile(null);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_OUT") {
+        const manual =
+          typeof window !== "undefined" &&
+          sessionStorage.getItem("asas_manual_logout");
+        if (typeof window !== "undefined") {
+          sessionStorage.removeItem("asas_manual_logout");
         }
-
-        setLoading(false);
+        if (!manual) {
+          toast.error("Session expired. Please login again.");
+        }
       }
-    );
+
+      setSession(session);
+
+      if (session) {
+        const p = await getUserProfileWithRetry();
+        setProfile(p);
+      } else {
+        setProfile(null);
+      }
+
+      setLoading(false);
+    });
 
     return () => subscription.unsubscribe();
   }, []);

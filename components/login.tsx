@@ -35,36 +35,43 @@ export function Login() {
     setLoading(true);
     try {
       if (isSignup) {
-        const signUpData = await signUp(email, password, name.trim(), role);
-        console.log("[login] signUp success", signUpData);
+        await signUp(email, password, name.trim(), role);
         toast.success("Account created! Welcome aboard 🎉", {
           description: `Signing you in as ${role}...`,
         });
       } else {
-        const signInData = await signIn(email, password);
-        console.log("[login] signIn success", signInData);
+        await signIn(email, password);
         toast.success("Welcome back!", {
           description: "Redirecting to your dashboard...",
         });
       }
 
       const profile = await getUserProfileWithRetry();
-      console.log("[login] profile after auth", profile);
 
       if (profile?.role === "student") {
         router.replace("/student-dashboard");
       } else if (profile?.role === "teacher") {
         router.replace("/teacher-dashboard");
       } else {
-        setError("Your profile could not be loaded. Check Supabase profiles table and RLS policies.");
+        const failMsg =
+          "Your profile could not be loaded. Check Supabase profiles table and RLS policies.";
+        setError(failMsg);
+        toast.error(failMsg);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Something went wrong.";
-      // Map Supabase error messages to user-friendly text
-      if (msg.includes("Invalid login credentials")) setError("Incorrect email or password.");
-      else if (msg.includes("User already registered")) setError("An account with this email already exists.");
-      else if (msg.includes("Password should be")) setError("Password must be at least 6 characters.");
-      else setError(msg);
+      if (!isSignup) {
+        toast.error("Invalid email or password");
+      } else if (
+        /already registered|already exists/i.test(msg) ||
+        msg.includes("Invalid login credentials") ||
+        msg.includes("Invalid")
+      ) {
+        toast.error("Invalid email or password");
+      } else {
+        toast.error(msg.length > 160 ? "Invalid email or password" : msg);
+      }
+      setError("");
     } finally {
       setLoading(false);
     }
@@ -117,7 +124,8 @@ export function Login() {
                     key={t}
                     type="button"
                     onClick={() => switchTab(t)}
-                    className={`flex-1 py-1.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+                    aria-label={t === "signin" ? "Sign in tab" : "Sign up tab"}
+                    className={`flex-1 py-1.5 text-sm font-medium rounded-lg transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40 ${
                       tab === t
                         ? "bg-card shadow-sm text-foreground"
                         : "text-muted-foreground hover:text-foreground"
@@ -139,7 +147,7 @@ export function Login() {
                       placeholder="Enter your full name"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="h-11 rounded-xl bg-secondary border-border transition-all duration-200 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500"
+                      className="h-11 rounded-xl bg-secondary border-border transition-all duration-200 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
                     />
                   </div>
                 )}
@@ -153,7 +161,7 @@ export function Login() {
                     placeholder="Enter your email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="h-11 rounded-xl bg-secondary border-border transition-all duration-200 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500"
+                    className="h-11 rounded-xl bg-secondary border-border transition-all duration-200 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
                     required
                   />
                 </div>
@@ -167,7 +175,7 @@ export function Login() {
                     placeholder="Enter your password (min 6 chars)"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="h-11 rounded-xl bg-secondary border-border transition-all duration-200 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500"
+                    className="h-11 rounded-xl bg-secondary border-border transition-all duration-200 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
                     required
                   />
                 </div>
@@ -200,7 +208,7 @@ export function Login() {
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="w-full mt-2 h-11 rounded-xl gradient-button font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  className="w-full mt-2 h-11 rounded-xl gradient-button font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
                 >
                   {loading ? (
                     <span className="flex items-center gap-2">

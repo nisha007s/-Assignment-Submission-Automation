@@ -36,7 +36,7 @@ export default function StudentDashboardPage() {
   return (
     <StudentDashboard
       userId={profile.id}
-      userName={profile.full_name}
+      userName={profile.full_name?.trim() || profile.email || "Student"}
       onLogout={async () => {
         await signOut();
         router.push("/");

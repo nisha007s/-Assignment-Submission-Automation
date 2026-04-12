@@ -35,7 +35,7 @@ export default function TeacherDashboardPage() {
 
   return (
     <TeacherDashboard
-      userName={profile.full_name}
+      userName={profile.full_name?.trim() || profile.email || "Teacher"}
       onLogout={async () => {
         await signOut();
         router.push("/");

@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { UniversityHeader } from "@/components/ui/university-header";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -112,6 +113,7 @@ export function TeacherDashboard({ userName, onLogout }: TeacherDashboardProps) 
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to load teacher dashboard data";
       setError(message);
+      toast.error("Could not load dashboard", { description: message, id: "teacher-dashboard-load" });
     } finally {
       setLoading(false);
     }
@@ -168,7 +170,7 @@ export function TeacherDashboard({ userName, onLogout }: TeacherDashboardProps) 
           fileUrl
         );
         setAssignments((prev) => [created, ...prev]);
-        toast.success("Assignment created");
+        toast.success("Assignment created successfully");
       } catch (insertErr) {
         if (fileUrl) {
           await deleteTeacherAssignmentFile(fileUrl).catch(() => {});
@@ -259,14 +261,6 @@ export function TeacherDashboard({ userName, onLogout }: TeacherDashboardProps) 
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-muted dark:bg-background">
-        <div className="h-9 w-9 animate-spin rounded-full border-4 border-orange-500 border-t-transparent" />
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-muted dark:bg-background transition-colors duration-300">
       <UniversityHeader
@@ -286,6 +280,59 @@ export function TeacherDashboard({ userName, onLogout }: TeacherDashboardProps) 
           </Card>
         )}
 
+        {loading ? (
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Card key={i} className="rounded-2xl border border-border bg-card shadow-sm">
+                  <CardContent className="p-4 flex items-center gap-3">
+                    <Skeleton className="h-10 w-10 shrink-0 rounded-xl" />
+                    <div className="space-y-2 flex-1">
+                      <Skeleton className="h-7 w-12" />
+                      <Skeleton className="h-3 w-24" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            <div className="grid gap-8 lg:grid-cols-3">
+              <div className="lg:col-span-1 space-y-4">
+                <Card className="rounded-2xl border border-border bg-card">
+                  <CardHeader className="space-y-2">
+                    <Skeleton className="h-6 w-40" />
+                    <Skeleton className="h-4 w-full" />
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-20 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </CardContent>
+                </Card>
+                <Card className="rounded-2xl border border-border bg-card">
+                  <CardContent className="p-4 space-y-3">
+                    <Skeleton className="h-5 w-3/4" />
+                    <Skeleton className="h-16 w-full" />
+                    <Skeleton className="h-16 w-full" />
+                  </CardContent>
+                </Card>
+              </div>
+              <div className="lg:col-span-2">
+                <Card className="rounded-2xl border border-border bg-card overflow-hidden">
+                  <CardHeader>
+                    <Skeleton className="h-6 w-48" />
+                    <Skeleton className="h-4 w-full max-w-md" />
+                  </CardHeader>
+                  <CardContent className="p-4 space-y-2">
+                    {Array.from({ length: 5 }).map((_, j) => (
+                      <Skeleton key={j} className="h-12 w-full" />
+                    ))}
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
         {/* ── NEW: Stats Cards ──────────────────────────────────────────── */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {statCards.map((s, i) => (
@@ -325,19 +372,19 @@ export function TeacherDashboard({ userName, onLogout }: TeacherDashboardProps) 
                       <FieldLabel htmlFor="title" className="text-foreground">Title</FieldLabel>
                       <Input id="title" placeholder="Assignment title" value={newAssignment.title}
                         onChange={(e) => setNewAssignment((prev) => ({ ...prev, title: e.target.value }))}
-                        className="rounded-xl bg-secondary border-border transition-all duration-200 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500" required />
+                        className="rounded-xl bg-secondary border-border transition-all duration-200 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40" required />
                     </Field>
                     <Field>
                       <FieldLabel htmlFor="description" className="text-foreground">Description</FieldLabel>
                       <Textarea id="description" placeholder="Assignment description" value={newAssignment.description}
                         onChange={(e) => setNewAssignment((prev) => ({ ...prev, description: e.target.value }))}
-                        rows={3} className="rounded-xl resize-none bg-secondary border-border transition-all duration-200 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500" required />
+                        rows={3} className="rounded-xl resize-none bg-secondary border-border transition-all duration-200 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40" required />
                     </Field>
                     <Field>
                       <FieldLabel htmlFor="deadline" className="text-foreground">Deadline</FieldLabel>
                       <Input id="deadline" type="date" value={newAssignment.deadline}
                         onChange={(e) => setNewAssignment((prev) => ({ ...prev, deadline: e.target.value }))}
-                        className="rounded-xl bg-secondary border-border transition-all duration-200 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500" required />
+                        className="rounded-xl bg-secondary border-border transition-all duration-200 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40" required />
                     </Field>
                     <Field>
                       <FieldLabel htmlFor="handout" className="text-foreground">Upload assignment file</FieldLabel>
@@ -445,6 +492,7 @@ export function TeacherDashboard({ userName, onLogout }: TeacherDashboardProps) 
                 <CardDescription className="text-muted-foreground">View, grade and download student submissions</CardDescription>
               </CardHeader>
               <CardContent className="p-0">
+                <div className="w-full overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/50 dark:bg-secondary/50 hover:bg-muted/50 dark:hover:bg-secondary/50 border-border">
@@ -460,7 +508,9 @@ export function TeacherDashboard({ userName, onLogout }: TeacherDashboardProps) 
                     {submissions.map((submission) => (
                       <TableRow key={submission.id}
                         className="transition-colors duration-200 hover:bg-muted/30 dark:hover:bg-secondary/30 border-border">
-                        <TableCell className="font-medium text-foreground">{submission.studentName}</TableCell>
+                        <TableCell className="font-medium text-foreground">
+                          {submission.studentName?.trim() || "Unknown Student"}
+                        </TableCell>
                         <TableCell className="text-muted-foreground text-sm max-w-[120px] truncate">{submission.assignmentName}</TableCell>
                         <TableCell>{getVersionBadge(submission.latestVersion)}</TableCell>
                         {/* NEW: Status badge */}
@@ -471,28 +521,28 @@ export function TeacherDashboard({ userName, onLogout }: TeacherDashboardProps) 
                             : "—"}
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
+                          <div className="flex flex-wrap items-center justify-end gap-1">
                             {/* Download (existing) */}
                             <Button variant="ghost" size="sm"
                               disabled={!submission.fileUrl || downloadBusyId === submission.id}
                               onClick={() => void handleDownload(submission)}
-                              className="h-8 w-8 p-0 rounded-lg hover:bg-orange-100 hover:text-orange-600 dark:hover:bg-orange-500/10 dark:hover:text-orange-500 disabled:opacity-40"
+                              className="h-8 w-8 p-0 rounded-lg hover:bg-orange-100 hover:text-orange-600 dark:hover:bg-orange-500/10 dark:hover:text-orange-500 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
                               aria-label={`Download submission from ${submission.studentName}`}>
-                              <Download className="h-3.5 w-3.5" />
+                              <Download className="h-3.5 w-3.5" aria-hidden />
                             </Button>
                             {/* NEW: Grade button */}
                             <Button variant="ghost" size="sm"
                               onClick={() => setGradeTarget(submission)}
-                              className="h-8 w-8 p-0 rounded-lg hover:bg-emerald-100 hover:text-emerald-600 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-400"
+                              className="h-8 w-8 p-0 rounded-lg hover:bg-emerald-100 hover:text-emerald-600 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
                               aria-label="Grade submission">
-                              <GraduationCap className="h-3.5 w-3.5" />
+                              <GraduationCap className="h-3.5 w-3.5" aria-hidden />
                             </Button>
                             {/* NEW: History button */}
                             <Button variant="ghost" size="sm"
                               onClick={() => setHistoryTarget(submission)}
-                              className="h-8 w-8 p-0 rounded-lg hover:bg-blue-100 hover:text-blue-600 dark:hover:bg-blue-500/10 dark:hover:text-blue-400"
-                              aria-label="View history">
-                              <History className="h-3.5 w-3.5" />
+                              className="h-8 w-8 p-0 rounded-lg hover:bg-blue-100 hover:text-blue-600 dark:hover:bg-blue-500/10 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
+                              aria-label="View submission version history">
+                              <History className="h-3.5 w-3.5" aria-hidden />
                             </Button>
                           </div>
                         </TableCell>
@@ -500,10 +550,13 @@ export function TeacherDashboard({ userName, onLogout }: TeacherDashboardProps) 
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               </CardContent>
             </Card>
           </div>
         </div>
+          </>
+        )}
       </main>
 
       <FloatingMenu
@@ -518,11 +571,12 @@ export function TeacherDashboard({ userName, onLogout }: TeacherDashboardProps) 
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setDeleteTarget(null)} />
-          <div className="relative w-full max-w-sm rounded-2xl bg-card border border-border shadow-xl p-6"
+          <div className="relative w-full max-w-sm max-h-[90vh] overflow-y-auto rounded-2xl bg-card border border-border shadow-xl p-6"
             style={{ animation: "slideUp 0.25s ease both" }}>
-            <button onClick={() => setDeleteTarget(null)}
-              className="absolute top-4 right-4 p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-              <X className="h-4 w-4" />
+            <button type="button" onClick={() => setDeleteTarget(null)}
+              aria-label="Close delete confirmation"
+              className="absolute top-4 right-4 p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40">
+              <X className="h-4 w-4" aria-hidden />
             </button>
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-100 dark:bg-red-500/10 mb-4">
               <Trash2 className="h-6 w-6 text-red-500" />
@@ -531,21 +585,24 @@ export function TeacherDashboard({ userName, onLogout }: TeacherDashboardProps) 
             <p className="text-sm text-muted-foreground mb-6">
               Are you sure you want to delete <span className="font-medium text-foreground">"{deleteTarget.title}"</span>? This action cannot be undone.
             </p>
-            <div className="flex gap-3">
-              <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setDeleteTarget(null)}>
+            <div className="flex flex-wrap gap-3">
+              <Button variant="outline" className="flex-1 min-w-[120px] rounded-xl" onClick={() => setDeleteTarget(null)}>
                 Cancel
               </Button>
-              <Button className="flex-1 rounded-xl bg-red-500 hover:bg-red-600 text-white"
+              <Button className="flex-1 min-w-[120px] rounded-xl bg-red-500 hover:bg-red-600 text-white"
                 disabled={deleteLoading}
+                aria-label="Confirm delete assignment"
                 onClick={async () => {
                   try {
                     setDeleteLoading(true);
                     await deleteAssignment(deleteTarget.id);
                     setAssignments((prev) => prev.filter((a) => a.id !== deleteTarget.id));
                     setDeleteTarget(null);
+                    toast.success("Assignment deleted");
                   } catch (err) {
                     const message = err instanceof Error ? err.message : "Failed to delete assignment";
                     setError(message);
+                    toast.error("Could not delete assignment", { description: message });
                   } finally {
                     setDeleteLoading(false);
                   }

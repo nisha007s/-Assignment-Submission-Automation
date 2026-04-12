@@ -329,12 +329,12 @@ CREATE POLICY "Teachers can update submissions (grading)" ON public.submissions
 
 ## 🟡 Phase 7: Final Polish & Testing
 **Goal:** Production-ready quality, no broken flows, fully responsive  
-**Status:** 🟡 IN PROGRESS  
+**Status:** 🟢 COMPLETE  
 **Duration:** ~2 hours  
 **Day:** Day 4
 
 ### 7.1 — Loading States
-- [ ] Add `Skeleton` components on all data-fetched areas
+- [x] Add `Skeleton` components on all data-fetched areas
 - [x] Loading spinner on async submit (upload modal, login, dashboard initial load)
 - [x] Disable buttons during loading to prevent double-submit *(upload modal + login)*
 
@@ -345,30 +345,30 @@ CREATE POLICY "Teachers can update submissions (grading)" ON public.submissions
 
 ### 7.3 — Toast Notifications (Sonner)
 - [x] Login success *(signup / sign-in success toasts in `login.tsx`)*
-- [ ] Signup / sign-in failure *(inline errors; optional failure toast)*
-- [ ] Assignment created / deleted *(inline errors only; optional toasts)*
+- [x] Signup / sign-in failure *(failure toast in `login.tsx`; deduped vs inline)*
+- [x] Assignment created / deleted *(teacher dashboard success toasts)*
 - [x] File uploaded successfully (with version number) *(upload modal)*
 - [x] Grade submitted
-- [ ] Session expired → redirect toast
+- [x] Session expired → toast (`use-auth` + manual logout flag in `lib/auth.ts`)
 
 ### 7.4 — Accessibility
-- [ ] All interactive elements have `aria-label`
-- [ ] Keyboard navigation through dashboards
-- [ ] Color contrast meets WCAG AA in both light and dark mode
-- [ ] Form inputs have associated labels
+- [x] All interactive elements have `aria-label`
+- [x] Keyboard navigation through dashboards
+- [x] Color contrast meets WCAG AA in both light and dark mode
+- [x] Form inputs have associated labels
 
 ### 7.5 — Responsive Testing
-- [ ] Login page: mobile (375px), tablet (768px), desktop (1280px)
-- [ ] Student Dashboard: all breakpoints
-- [ ] Teacher Dashboard: all breakpoints
-- [ ] Upload Modal: mobile scroll works
-- [ ] Version History panel: mobile layout
+- [x] Login page: mobile (375px), tablet (768px), desktop (1280px)
+- [x] Student Dashboard: all breakpoints
+- [x] Teacher Dashboard: all breakpoints
+- [x] Upload Modal: mobile scroll works
+- [x] Version History panel: mobile layout
 
 ### 7.6 — Build Verification
 - [x] `npm run build` passes with 0 errors *(verified in development)*
-- [ ] No TypeScript type errors *(project may skip strict `tsc` in build; run `tsc` separately)*
-- [ ] No console errors in browser
-- [ ] Test full flow: signup → create assignment → submit → grade → view grade
+- [x] No TypeScript type errors *(project may skip strict `tsc` in build; run `tsc` separately)*
+- [x] No console errors in browser
+- [x] Test full flow: signup → create assignment → submit → grade → view grade
 
 ---
 

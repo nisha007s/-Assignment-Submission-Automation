@@ -85,9 +85,10 @@ export function UniversityHeader({
             variant="outline"
             size="sm"
             onClick={onLogout}
-            className="rounded-xl border-white/40 bg-white/10 text-white shadow-sm backdrop-blur-sm transition-all hover:bg-white/20 hover:text-white"
+            aria-label="Log out"
+            className="rounded-xl border-white/40 bg-white/10 text-white shadow-sm backdrop-blur-sm transition-all hover:bg-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
           >
-            <LogOut className="mr-1.5 h-4 w-4" />
+            <LogOut className="mr-1.5 h-4 w-4" aria-hidden />
             Logout
           </Button>
         </div>

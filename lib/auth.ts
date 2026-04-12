@@ -34,7 +34,7 @@ export async function signUp(
       throw profileError;
     }
   }
-  
+
 
   return data;
 }
@@ -47,17 +47,20 @@ export async function signIn(email: string, password: string) {
 }
 
 export async function signOut() {
+  if (typeof window !== "undefined") {
+    sessionStorage.setItem("asas_manual_logout", "1");
+  }
   const { error } = await supabase.auth.signOut();
   if (error) throw error;
 }
 
 export async function getUserProfile() {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+  const user = (await supabase.auth.getUser()).data.user;
+
   const { data, error } = await supabase
     .from("profiles")
     .select("*")
-    .eq("id", user.id)
+    .eq("id", user?.id)
     .maybeSingle();
 
   if (error) {
@@ -95,7 +98,7 @@ export async function ensureUserProfile(
       { onConflict: "id" }
     )
     .select("*")
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error("[auth:ensureUserProfile] failed", error);

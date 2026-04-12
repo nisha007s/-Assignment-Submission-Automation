@@ -18,11 +18,17 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { UploadModal } from "@/components/upload-modal";
 import { VersionHistory } from "@/components/version-history";
 import { FloatingMenu } from "@/components/floating-menu";
 import { UniversityHeader } from "@/components/ui/university-header";
+import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/lib/supabase";
 import { resolveAssignmentHandoutUrl } from "@/lib/storage";
 import { getAssignments, getStudentSubmissions, type AssignmentRecord } from "@/lib/database";
@@ -103,6 +109,7 @@ export function StudentDashboard({ userId, userName, onLogout }: StudentDashboar
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to load dashboard data";
       setError(message);
+      toast.error("Could not load dashboard", { description: message, id: "student-dashboard-load" });
     } finally {
       setLoading(false);
     }
@@ -206,14 +213,6 @@ export function StudentDashboard({ userId, userName, onLogout }: StudentDashboar
     { label: "Under Review",value: stats.underReview, icon: Eye,           color: "text-blue-500" },
   ];
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-muted dark:bg-background">
-        <div className="h-9 w-9 animate-spin rounded-full border-4 border-orange-500 border-t-transparent" />
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-muted dark:bg-background transition-colors duration-300">
       <UniversityHeader
@@ -237,6 +236,55 @@ export function StudentDashboard({ userId, userName, onLogout }: StudentDashboar
             </Card>
           )}
 
+          {loading ? (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Card key={i} className="rounded-2xl border border-border bg-card shadow-sm">
+                    <CardContent className="p-4 flex items-center gap-3">
+                      <Skeleton className="h-10 w-10 shrink-0 rounded-xl" />
+                      <div className="space-y-2 flex-1">
+                        <Skeleton className="h-7 w-12" />
+                        <Skeleton className="h-3 w-20" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+              <section>
+                <Skeleton className="h-6 w-48 mb-4 rounded-md" />
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <Card key={i} className="rounded-2xl border border-border bg-card">
+                      <CardHeader className="pb-3 space-y-2">
+                        <Skeleton className="h-5 w-4/5" />
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-3/4" />
+                      </CardHeader>
+                      <CardContent className="pt-0 space-y-3">
+                        <Skeleton className="h-4 w-2/3" />
+                        <div className="flex flex-wrap gap-2">
+                          <Skeleton className="h-8 w-24 rounded-lg" />
+                          <Skeleton className="h-8 w-28 rounded-lg" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </section>
+              <section>
+                <Skeleton className="h-6 w-40 mb-4 rounded-md" />
+                <Card className="rounded-2xl border border-border bg-card">
+                  <CardContent className="p-4 space-y-3">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </CardContent>
+                </Card>
+              </section>
+            </>
+          ) : (
+            <>
           {/* ── NEW: Stats Cards ────────────────────────────────────────── */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {statCards.map((s, i) => (
@@ -288,34 +336,49 @@ export function StudentDashboard({ userId, userName, onLogout }: StudentDashboar
                         {assignment.description ?? "No description"}
                       </CardDescription>
                     </CardHeader>
-                    <CardContent>
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                        <div className="flex flex-col gap-0.5 min-w-0">
+                    <CardContent className="pt-0">
+                      <div className="flex min-w-0 flex-col gap-3">
+                        <div className="min-w-0 space-y-0.5">
                           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                            <Calendar className="h-3.5 w-3.5 text-orange-500 shrink-0" />
-                            <span>Due: {assignment.deadline}</span>
+                            <Calendar className="h-3.5 w-3.5 shrink-0 text-orange-500" />
+                            <span className="truncate">Due: {assignment.deadline}</span>
                           </div>
                           <span className={`text-xs ${dl.cls}`}>{dl.label}</span>
                         </div>
-                        <div className="flex flex-wrap gap-2 justify-end shrink-0">
+                        <div className="flex min-w-0 flex-wrap items-center gap-2">
                           {assignment.file_url ? (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => void handleDownloadHandout(assignment)}
-                              className="rounded-xl border-red-200 bg-white/80 text-red-700 hover:bg-red-50 hover:border-red-300 dark:border-red-500/30 dark:bg-secondary dark:text-red-300 dark:hover:bg-red-500/10 transition-all duration-200"
-                            >
-                              <Download className="mr-1.5 h-3.5 w-3.5" />
-                              Download assignment
-                            </Button>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  title="Download assignment"
+                                  aria-label="Download assignment handout"
+                                  onClick={() => void handleDownloadHandout(assignment)}
+                                  className="h-8 shrink-0 gap-1 rounded-lg border-red-200/80 bg-background px-2.5 text-xs font-medium text-red-700 hover:bg-red-50 dark:border-red-500/25 dark:bg-secondary dark:text-red-300 dark:hover:bg-red-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
+                                >
+                                  <Download className="h-3.5 w-3.5 shrink-0" />
+                                  <span>Download</span>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-[220px]">
+                                Download assignment
+                              </TooltipContent>
+                            </Tooltip>
                           ) : null}
                           <Button
+                            type="button"
                             size="sm"
                             onClick={() => handleUploadClick(assignment)}
-                            className="rounded-xl gradient-button font-medium transition-all duration-300 hover:scale-105 active:scale-95"
+                            aria-label={
+                              isSubmitted
+                                ? `Resubmit assignment: ${assignment.title}`
+                                : `Upload submission for ${assignment.title}`
+                            }
+                            className="h-8 shrink-0 gap-1 rounded-lg px-2.5 text-xs font-medium gradient-button transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
                           >
-                            <Upload className="mr-1.5 h-3.5 w-3.5" />
+                            <Upload className="h-3.5 w-3.5 shrink-0" aria-hidden />
                             {isSubmitted ? "Resubmit" : "Upload"}
                           </Button>
                         </div>
@@ -335,6 +398,7 @@ export function StudentDashboard({ userId, userName, onLogout }: StudentDashboar
             </h2>
             <Card className="rounded-2xl overflow-hidden border border-border bg-card shadow-sm dark:shadow-none">
               <CardContent className="p-0">
+                <div className="w-full overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/50 dark:bg-secondary/50 hover:bg-muted/50 dark:hover:bg-secondary/50 border-border">
@@ -375,7 +439,7 @@ export function StudentDashboard({ userId, userName, onLogout }: StudentDashboar
                                     variant="ghost"
                                     size="sm"
                                     className={cn(
-                                      "h-8 px-2 font-semibold tabular-nums",
+                                      "h-8 px-2 font-semibold tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40",
                                       gradeScoreColorClass(submission.grade)
                                     )}
                                     aria-label={`Grade ${submission.grade} out of 100. Click for feedback.`}
@@ -401,8 +465,8 @@ export function StudentDashboard({ userId, userName, onLogout }: StudentDashboar
                               type="button"
                               variant="ghost"
                               size="sm"
-                              className="h-8 rounded-lg hover:bg-blue-100 hover:text-blue-600 dark:hover:bg-blue-500/10 dark:hover:text-blue-400"
-                              aria-label={`View history for ${submission.assignmentName}`}
+                              className="h-8 rounded-lg hover:bg-blue-100 hover:text-blue-600 dark:hover:bg-blue-500/10 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
+                              aria-label={`View submission history for ${submission.assignmentName}`}
                               onClick={() =>
                                 setHistoryOpen({
                                   assignmentId: submission.assignmentId,
@@ -419,9 +483,12 @@ export function StudentDashboard({ userId, userName, onLogout }: StudentDashboar
                     )}
                   </TableBody>
                 </Table>
+                </div>
               </CardContent>
             </Card>
           </section>
+            </>
+          )}
         </div>
       </main>
 

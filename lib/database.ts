@@ -37,6 +37,32 @@ export interface TeacherSubmissionRecord {
   feedback: string | null;
 }
 
+interface StudentSubmissionQueryRow {
+  id: string;
+  assignment_id: string;
+  version: number;
+  status: StudentSubmissionRecord["status"];
+  created_at: string;
+  grade: number | null;
+  feedback: string | null;
+  assignments?: { title?: string | null } | null;
+}
+
+interface TeacherSubmissionQueryRow {
+  id: string;
+  assignment_id: string;
+  student_id: string;
+  version: number;
+  status: TeacherSubmissionRecord["status"];
+  created_at: string;
+  file_url: string | null;
+  file_name: string | null;
+  grade: number | null;
+  feedback: string | null;
+  assignments?: { title?: string | null } | null;
+  profiles?: unknown;
+}
+
 export interface SubmissionVersionRecord {
   id: string;
   assignment_id: string;
@@ -73,12 +99,6 @@ export async function createSubmission(data: CreateSubmissionInput): Promise<{ i
     status: "submitted" as const,
   };
 
-  const urlPreview =
-    payload.file_url && payload.file_url.length > 80
-      ? `${payload.file_url.slice(0, 80)}…`
-      : payload.file_url;
-  console.log("[createSubmission] inserting row", { ...payload, file_url: urlPreview });
-
   const { data: row, error } = await supabase
     .from("submissions")
     .insert(payload)
@@ -95,7 +115,6 @@ export async function createSubmission(data: CreateSubmissionInput): Promise<{ i
     throw error;
   }
 
-  console.log("[createSubmission] insert OK", row);
   if (!row?.id) throw new Error("Submission insert returned no id");
   return { id: row.id as string };
 }
@@ -121,19 +140,8 @@ export async function createAssignment(
     error: sessionErr,
   } = await supabase.auth.getSession();
 
-  console.log("[createAssignment] getSession", {
-    hasSession: !!session,
-    sessionError: sessionErr?.message ?? null,
-    accessTokenPresent: !!session?.access_token,
-    sessionUserId: session?.user?.id ?? null,
-  });
-
   if (!session?.access_token) {
     const { data: refreshed, error: refreshErr } = await supabase.auth.refreshSession();
-    console.log("[createAssignment] refreshSession", {
-      ok: !!refreshed.session,
-      refreshError: refreshErr?.message ?? null,
-    });
     if (!refreshed.session?.access_token) {
       throw new Error(
         "No active Supabase session (JWT missing). Sign in again. " +
@@ -146,11 +154,6 @@ export async function createAssignment(
     data: { user },
     error: userErr,
   } = await supabase.auth.getUser();
-
-  console.log("[createAssignment] getUser", {
-    userId: user?.id ?? null,
-    userError: userErr?.message ?? null,
-  });
 
   if (userErr) throw userErr;
   if (!user?.id) throw new Error("Not authenticated");
@@ -166,12 +169,6 @@ export async function createAssignment(
   if (file_url != null && String(file_url).trim() !== "") {
     payload.file_url = file_url;
   }
-
-  console.log("[createAssignment] insert payload", {
-    teacher_id: teacherId,
-    deadline,
-    hasFileUrl: "file_url" in payload,
-  });
 
   const { data, error } = await supabase.from("assignments").insert(payload).select("*").single();
 
@@ -208,7 +205,7 @@ export async function getStudentSubmissions(): Promise<StudentSubmissionRecord[]
   if (error) throw error;
 
   const latestByAssignment = new Map<string, StudentSubmissionRecord>();
-  (data ?? []).forEach((row: any) => {
+  ((data ?? []) as StudentSubmissionQueryRow[]).forEach((row) => {
     const existing = latestByAssignment.get(row.assignment_id);
     if (!existing || row.version > existing.version) {
       latestByAssignment.set(row.assignment_id, {
@@ -229,27 +226,47 @@ export async function getStudentSubmissions(): Promise<StudentSubmissionRecord[]
   );
 }
 
+/** Resolve `full_name` from PostgREST embed `profiles` (object or single-element array). */
+function profileFullNameFromEmbed(profiles: unknown): string | null {
+  if (profiles == null) return null;
+  if (Array.isArray(profiles)) {
+    const name = profiles[0]?.full_name;
+    return typeof name === "string" && name.trim() !== "" ? name.trim() : null;
+  }
+  if (typeof profiles === "object" && "full_name" in profiles) {
+    const name = (profiles as { full_name?: string | null }).full_name;
+    return typeof name === "string" && name.trim() !== "" ? name.trim() : null;
+  }
+  return null;
+}
+
 export async function getAllSubmissions(): Promise<TeacherSubmissionRecord[]> {
   const { data, error } = await supabase
     .from("submissions")
     .select(
-      "id, assignment_id, student_id, version, status, created_at, file_url, file_name, grade, feedback, assignments(title), profiles!submissions_student_id_fkey(full_name)"
+      `
+      *,
+      assignments ( title ),
+      profiles!submissions_student_id_fkey ( full_name )
+    `
     )
     .order("created_at", { ascending: false });
 
   if (error) throw error;
 
   const latestByStudentAssignment = new Map<string, TeacherSubmissionRecord>();
-  (data ?? []).forEach((row: any) => {
+  ((data ?? []) as TeacherSubmissionQueryRow[]).forEach((row) => {
     const key = `${row.student_id}-${row.assignment_id}`;
     const existing = latestByStudentAssignment.get(key);
     if (!existing || row.version > existing.version) {
+      const nameFromProfile = profileFullNameFromEmbed(row.profiles);
+
       latestByStudentAssignment.set(key, {
         id: row.id,
         assignment_id: row.assignment_id,
         assignment_title: row.assignments?.title ?? "Untitled Assignment",
         student_id: row.student_id,
-        student_name: row.profiles?.full_name ?? "Unknown Student",
+        student_name: nameFromProfile ?? "Unknown Student",
         version: row.version,
         status: row.status,
         created_at: row.created_at,

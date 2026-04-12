@@ -104,37 +104,27 @@ export function UploadModal({
     setUploadProgress(0);
 
     try {
-      console.log("[upload] resolving user…");
       const { data: userData, error: userError } = await supabase.auth.getUser();
 
       if (userError) {
-        console.error("[upload] getUser error", userError);
         throw userError;
       }
 
       const user = userData.user;
       if (!user) {
-        console.error("[upload] no user on session");
         throw new Error("Not signed in");
       }
 
-      console.log("[upload] user OK", { id: user.id });
-
-      console.log("[upload] getNextVersionNumber…", { assignmentId, studentId: user.id });
       const version = await getNextVersionNumber(assignmentId, user.id);
-      console.log("[upload] next version", version);
 
-      console.log("[upload] starting storage upload…");
       const { path } = await uploadFile(
         selectedFile,
         { assignmentId: assignmentId.trim(), userId: user.id, version },
         (pct) => setUploadProgress(pct)
       );
-      console.log("[upload] storage upload finished", { path });
 
       try {
-        console.log("[upload] inserting submission row…");
-        const insertResult = await createSubmission({
+        await createSubmission({
           assignment_id: assignmentId.trim(),
           student_id: user.id,
           file_url: path,
@@ -142,12 +132,8 @@ export function UploadModal({
           file_size: selectedFile.size,
           version,
         });
-        console.log("[upload] insert finished", insertResult);
       } catch (insertErr) {
-        console.error("[upload] insert failed — removing uploaded object", insertErr);
-        await deleteFile(path).catch((delErr) =>
-          console.warn("[upload] rollback deleteFile failed", delErr)
-        );
+        await deleteFile(path).catch(() => {});
         throw insertErr;
       }
 
@@ -160,13 +146,10 @@ export function UploadModal({
 
       onOpenChange(false);
       onSuccess?.();
-      console.log("[upload] flow complete");
     } catch (err) {
-      console.error("[upload] flow error", err);
       const message = err instanceof Error ? err.message : "Upload failed";
       toast.error("Upload failed", { description: message });
     } finally {
-      console.log("[upload] finally: clearing loading state");
       setUploading(false);
       setUploadProgress(0);
     }
@@ -181,7 +164,7 @@ export function UploadModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-2xl bg-card border-border">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-card border-border">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-foreground">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-orange-600">
@@ -197,6 +180,15 @@ export function UploadModal({
           <div className="space-y-4">
             {/* Drop Zone */}
             <div
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (!uploading && (e.key === "Enter" || e.key === " ")) {
+                  e.preventDefault();
+                  fileInputRef.current?.click();
+                }
+              }}
+              aria-label="Choose file to upload or drop file here"
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
@@ -280,14 +272,16 @@ export function UploadModal({
               variant="outline"
               disabled={uploading}
               onClick={() => onOpenChange(false)}
-              className="rounded-xl border-border bg-muted dark:bg-secondary"
+              aria-label="Cancel upload"
+              className="rounded-xl border-border bg-muted dark:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={!selectedFile || uploading}
-              className="rounded-xl gradient-button font-medium transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100"
+              aria-label="Submit uploaded file"
+              className="rounded-xl gradient-button font-medium transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
             >
               {uploading ? (
                 <>
