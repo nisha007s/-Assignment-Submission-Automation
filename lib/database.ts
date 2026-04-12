@@ -115,31 +115,77 @@ export async function createAssignment(
   description: string,
   deadline: string,
   file_url?: string | null
-) {
-  const { data: { user } } = await supabase.auth.getUser();
+): Promise<AssignmentRecord> {
+  const {
+    data: { session },
+    error: sessionErr,
+  } = await supabase.auth.getSession();
 
-  if (!user) throw new Error("Not authenticated");
+  console.log("[createAssignment] getSession", {
+    hasSession: !!session,
+    sessionError: sessionErr?.message ?? null,
+    accessTokenPresent: !!session?.access_token,
+    sessionUserId: session?.user?.id ?? null,
+  });
 
-  const { data, error } = await supabase
-    .from("assignments")
-    .insert([
-      {
-        title,
-        description,
-        deadline,
-        teacher_id: user?.id, // ✅ IMPORTANT
-        file_url
-      }
-    ])
-    .select()
-    .single();
+  if (!session?.access_token) {
+    const { data: refreshed, error: refreshErr } = await supabase.auth.refreshSession();
+    console.log("[createAssignment] refreshSession", {
+      ok: !!refreshed.session,
+      refreshError: refreshErr?.message ?? null,
+    });
+    if (!refreshed.session?.access_token) {
+      throw new Error(
+        "No active Supabase session (JWT missing). Sign in again. " +
+          (refreshErr?.message ?? sessionErr?.message ?? "")
+      );
+    }
+  }
+
+  const {
+    data: { user },
+    error: userErr,
+  } = await supabase.auth.getUser();
+
+  console.log("[createAssignment] getUser", {
+    userId: user?.id ?? null,
+    userError: userErr?.message ?? null,
+  });
+
+  if (userErr) throw userErr;
+  if (!user?.id) throw new Error("Not authenticated");
+
+  const teacherId = user.id;
+
+  const payload: Record<string, unknown> = {
+    title,
+    description,
+    deadline,
+    teacher_id: teacherId,
+  };
+  if (file_url != null && String(file_url).trim() !== "") {
+    payload.file_url = file_url;
+  }
+
+  console.log("[createAssignment] insert payload", {
+    teacher_id: teacherId,
+    deadline,
+    hasFileUrl: "file_url" in payload,
+  });
+
+  const { data, error } = await supabase.from("assignments").insert(payload).select("*").single();
 
   if (error) {
-    console.error("CREATE ASSIGNMENT ERROR:", error);
+    console.error("[createAssignment] Supabase error", {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+    });
     throw error;
   }
 
-  return data;
+  return data as AssignmentRecord;
 }
    
 

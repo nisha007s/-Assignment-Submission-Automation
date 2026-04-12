@@ -80,9 +80,16 @@ CREATE POLICY "profiles_teacher_read" ON public.profiles FOR SELECT
 
 -- Assignments: all authenticated users can view
 CREATE POLICY "assignments_select" ON public.assignments FOR SELECT USING (auth.role() = 'authenticated');
--- Only teachers can create/delete their own assignments
-CREATE POLICY "assignments_insert" ON public.assignments FOR INSERT
-  WITH CHECK (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'teacher'));
+-- INSERT: must use WITH CHECK (not USING). Require teacher_id = auth.uid() AND role teacher on profiles.
+DROP POLICY IF EXISTS "assignments_insert" ON public.assignments;
+CREATE POLICY "assignments_insert" ON public.assignments FOR INSERT TO authenticated
+  WITH CHECK (
+    teacher_id = auth.uid()
+    AND EXISTS (
+      SELECT 1 FROM public.profiles AS p
+      WHERE p.id = auth.uid() AND p.role = 'teacher'
+    )
+  );
 CREATE POLICY "assignments_delete" ON public.assignments FOR DELETE USING (teacher_id = auth.uid());
 
 -- Submissions: students see own, teachers see all
