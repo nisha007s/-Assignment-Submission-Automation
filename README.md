@@ -8,7 +8,7 @@ Automates the complete lifecycle of assignments — from creation and distributi
 
 ## Stack
 
-Next.js · React 18 · TypeScript · Tailwind CSS · shadcn/ui
+Next.js · React 18 · TypeScript · Tailwind CSS 
 Supabase (PostgreSQL · Auth · Storage)
 Vercel (Deployment)
 
